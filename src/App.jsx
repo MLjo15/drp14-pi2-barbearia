@@ -2,6 +2,7 @@
 import Header from './components/Header.jsx';
 import Section from './components/Section.jsx';
 import Footer from './components/Footer.jsx';
+import './styles/main.css';
 
 // Importe o componente Button do Mantine
 import { Button } from '@mantine/core';
@@ -22,8 +23,8 @@ function App() {
           title="Nossos Serviços" 
           content="Oferecemos os melhores cortes clássicos e barboterapia relaxante."
         >
-          {/* O botão foi movido para dentro da seção de serviços */}
-          <Button variant="filled" color="green" size="lg" style={{ marginTop: '20px' }}>
+         {/* O botão foi movido para dentro da seção de serviços */}
+          <Button variant="filled" color="green" size="lg" style={{ marginTop: '15px' }}>
             Agende Seu Horário!
           </Button>
         </Section>
