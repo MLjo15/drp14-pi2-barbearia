@@ -1,4 +1,4 @@
-import React from 'react';
+// src/components/Section.jsx
 
 function Section({ id, title, content }) {
   return (

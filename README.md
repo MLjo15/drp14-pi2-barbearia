@@ -1,12 +1,14 @@
-# React + Vite
+// --- DRP14-PI2-BARBEARIA ---
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+UNIVESP - Universidade Virtual do Estado de São Paulo 
+    Projeto Integrador II - Eixo de Computação
 
-Currently, two official plugins are available:
+// --- Objetivo ---
+Este projeto contempla a criação de um site voltado para o cadastramento de barbearias e agendamento de clientes, utilizando a plataforma do Google Calendar entre outros recursos.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+// --- Tecnologias ---
+O desenvolvimento possui HTML, CSS, Javascript, a biblioteca React.js e Mantine, API Google Workspace e Calendar
 
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+// --- Versões ---
+Node v22.19.0
+npm v11.5.2
