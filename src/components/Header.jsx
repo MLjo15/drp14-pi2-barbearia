@@ -21,9 +21,9 @@ function Header() {
           <ul>
             {/* Agora cada link chama a função handleScroll */}
             <li><a href="#sobre" onClick={(e) => handleScroll(e, 'sobre')}>Sobre</a></li>
-            <li><a href="#servicos" onClick={(e) => handleScroll(e, 'servicos')}>Serviços</a></li>
+            <li><a href="#servicos" onClick={(e) => handleScroll(e, 'servicos')}>Agendamento</a></li>
             <li><a href="#galeria" onClick={(e) => handleScroll(e, 'galeria')}>Galeria</a></li>
-            <li><a href="#contato" onClick={(e) => handleScroll(e, 'contato')}>Contato</a></li>
+            <li><a href="#contato" onClick={(e) => handleScroll(e, 'contato')}>Cadastre-se</a></li>
           </ul>
         </nav>
       </div>
