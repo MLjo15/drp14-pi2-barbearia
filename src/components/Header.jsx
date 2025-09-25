@@ -1,14 +1,14 @@
 // src/components/Header.jsx
 
-function Header() {
+function Header({ onAgendamentoClick, onCadastroClick }) {
 
   const handleScroll = (e, targetId) => {
-    e.preventDefault(); // Previne o comportamento padrão do link
+    e.preventDefault();
     const targetElement = document.getElementById(targetId);
     if (targetElement) {
       targetElement.scrollIntoView({
-        behavior: 'smooth', // Rolagem suave
-        block: 'start'      // Alinha o topo do elemento com o topo da viewport
+        behavior: 'smooth',
+        block: 'start'
       });
     }
   };
@@ -19,11 +19,12 @@ function Header() {
         <h1>Barbearia Corte Certo</h1>
         <nav>
           <ul>
-            {/* Agora cada link chama a função handleScroll */}
             <li><a href="#sobre" onClick={(e) => handleScroll(e, 'sobre')}>Sobre</a></li>
-            <li><a href="#servicos" onClick={(e) => handleScroll(e, 'servicos')}>Agendamento</a></li>
+            {/* O link de agendamento agora abre o modal */}
+            <li><a href="#" onClick={(e) => { e.preventDefault(); onAgendamentoClick(); }}>Agendamento</a></li>
             <li><a href="#galeria" onClick={(e) => handleScroll(e, 'galeria')}>Galeria</a></li>
-            <li><a href="#contato" onClick={(e) => handleScroll(e, 'contato')}>Cadastre-se</a></li>
+            {/* O link de cadastro agora abre o modal */}
+            <li><a href="#" onClick={(e) => { e.preventDefault(); onCadastroClick(); }}>Cadastre-se</a></li>
           </ul>
         </nav>
       </div>

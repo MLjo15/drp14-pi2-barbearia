@@ -12,3 +12,18 @@ O desenvolvimento possui HTML, CSS, Javascript, a biblioteca React.js e Mantine,
 // --- Versões ---
 Node v22.19.0
 npm v11.5.2
+
+// --- Fase de Testes / Desenvolvimento ---
+Para testar o projeto instale o NodeJs com a versão v22.19.0
+Intale o VS Code mais recente, abrindo-o ao final do processo
+
+Pressione "CTRL + SHIF + P" e cole o link do github para fazer um "git clone"
+Selecione o local onde deseja salvar, e assim com a pasta do projeto aberta... 
+
+Abra o terminal e digite e execute "nmp install"
+
+Solicite o arquivo ".env" para os desenvolvedores, ele contém as chave das APIs
+Sem ela não vai rodar
+
+Ao fim do processo, execute "npm run dev"
+
