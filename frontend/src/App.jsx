@@ -1,16 +1,13 @@
-// src/App.jsx
-
 import React, { useState } from 'react';
 import Header from './components/Header.jsx';
 import Section from './components/Section.jsx';
 import Footer from './components/Footer.jsx';
 import Modal from './components/Modal.jsx';
-import FormularioAgendamento from './components/FormularioAgendamento';
-import FormularioCadastro from './components/FormularioCadastro';
-import './styles/main.css';
+import FormularioAgendamento from './components/FormularioAgendamento.jsx';
+import FormularioCadastro from './components/FormularioCadastro.jsx';
 import { Button } from '@mantine/core';
 
-// --- Imagens ---
+// Imagens
 import sobreImage from './assets/02.jpg';
 import servicosImage from './assets/03.png';
 import contatoImage from './assets/01.jpg';
@@ -23,13 +20,11 @@ function App() {
     setModalContent(content);
     setIsModalOpen(true);
   };
-
   const closeModal = () => {
     setIsModalOpen(false);
     setModalContent(null);
   };
 
-  // 🔑 Função para login com Google
   const handleGoogleLogin = () => {
     window.location.href = "http://localhost:5000/auth/google";
   };
@@ -75,32 +70,29 @@ function App() {
           content="Venha fazer parte do nosso time!"
           imageSrc={contatoImage}
         >
-          <Button
-            variant="filled"
-            color="green"
-            size="lg"
-            style={{ marginTop: '5px' }}
-            onClick={() => openModal('cadastro')}
-          >
-            Cadastre-se
-          </Button>
-
-          {/* 🔑 Botão para conectar com Google Calendar */}
-          <Button
-            variant="outline"
-            color="blue"
-            size="lg"
-            style={{ marginTop: '15px', marginLeft: '10px' }}
-            onClick={handleGoogleLogin}
-          >
-            Conectar com Google
-          </Button>
+          <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
+            <Button
+              variant="filled"
+              color="green"
+              size="lg"
+              onClick={() => openModal('cadastro')}
+            >
+              Cadastre-se
+            </Button>
+            <Button
+              variant="outline"
+              color="blue"
+              size="lg"
+              onClick={handleGoogleLogin}
+            >
+              Conectar com Google
+            </Button>
+          </div>
         </Section>
       </main>
 
       <Footer />
 
-      {/* Modal */}
       <Modal isOpen={isModalOpen} onClose={closeModal}>
         {modalContent === 'agendamento' && <FormularioAgendamento onClose={closeModal} />}
         {modalContent === 'cadastro' && <FormularioCadastro onClose={closeModal} />}

@@ -1,15 +1,18 @@
+// src/main.jsx
+
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import App from './App.jsx';
 
 // --- Biblioteca de Objetos Mantine ---
 import { MantineProvider } from '@mantine/core';
-import '@mantine/core/styles.css';
+import '@mantine/core/styles.css'; 
 import './styles/main.css';
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
-    <MantineProvider>
+    <MantineProvider> 
+      {/* Certifique-se de que App está DENTRO do MantineProvider */}
       <App />
     </MantineProvider>
   </StrictMode>,
