@@ -62,7 +62,7 @@ const FormularioAgendamento = ({ onClose }) => {
       const dataHoraInicio = `${formData.data}T${formData.hora}:00-03:00`;
       const dataHoraFim = `${formData.data}T${formData.hora}:00-03:00`; // ajuste futuro para duração
 
-      const response = await fetch("http://localhost:5000/agendamento", {
+      const response = await fetch("http://localhost:5173/agendamento", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
