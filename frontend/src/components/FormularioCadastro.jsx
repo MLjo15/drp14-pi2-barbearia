@@ -1,47 +1,64 @@
-// src/components/FormularioCadastro.jsx
-import React, { useState } from 'react';
-import { TextInput, Button, Loader, Notification } from '@mantine/core';
-import { supabase } from '../supabaseClient';
-import GCalAuthButton from './GCalAuthButton'; 
+import React, { useState } from "react";
+import { TextInput, Button, Select, Loader, Notification } from "@mantine/core";
+import { supabase } from "../supabaseClient";
+import GCalAuthButton from "./GCalAuthButton"; // Assumindo que você tem este componente
 
 const FormularioCadastro = ({ onClose }) => {
-  const [formData, setFormData] = useState({ /* ... */ });
+  const [formData, setFormData] = useState({
+    nome: "",
+    proprietario: "",
+    telefone: "",
+    email: "",
+    endereco: "",
+    intervalo: "30",
+  });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
-  const [newBarbeariaId, setNewBarbeariaId] = useState(null); 
+  const [newBarbeariaId, setNewBarbeariaId] = useState(null);
 
-  const handleChange = (e) => { /* ... */ };
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData((p) => ({ ...p, [name]: value }));
+  };
+
+  const handleSelectChange = (value) => setFormData((p) => ({ ...p, intervalo: value }));
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsLoading(true);
-    // ... lógica para inserir no Supabase ...
-    const { data, error: supabaseError } = await supabase
-      .from('barbearias')
-      .insert([
-        {
-          nome: formData.nome,
-          proprietario: formData.proprietario,
-          email: formData.email,
-          telefone: formData.telefone,
-          endereco: formData.endereco,
-        },
-      ])
-      .select('id')
-      .single();
+    setError(null);
+    try {
+      const { data, error } = await supabase
+        .from("barbearias")
+        .insert([
+          {
+            nome: formData.nome,
+            proprietario: formData.proprietario,
+            email: formData.email,
+            telefone: formData.telefone,
+            endereco: formData.endereco,
+            // Certifica-se de que o intervalo é inserido como número
+            intervalo: parseInt(formData.intervalo, 10), 
+          },
+        ])
+        .select("id")
+        .single();
 
-    setIsLoading(false);
+      if (error) throw error;
 
-    if (supabaseError) {
-      setError(supabaseError.code === '23505' ? 'Este e-mail já está cadastrado.' : supabaseError.message);
-      return;
+      setSuccess(true);
+      setNewBarbeariaId(data.id);
+    } catch (err) {
+      setError(err.message || "Erro ao cadastrar");
+    } finally {
+      setIsLoading(false);
     }
-
-    setSuccess(true);
-    setNewBarbeariaId(data.id); 
   };
 
+  // -----------------------------------------------------------
+  // RENDERIZAÇÃO PÓS-SUCESSO
+  // -----------------------------------------------------------
   if (success && newBarbeariaId) {
     return (
       <div className="form-container">
@@ -49,35 +66,46 @@ const FormularioCadastro = ({ onClose }) => {
         <Notification title="Próximo Passo" color="green" style={{ marginBottom: 15 }}>
           Barbearia cadastrada. Agora, conecte seu Google Calendar.
         </Notification>
-        <GCalAuthButton barbeariaId={newBarbeariaId} />
-        <Button variant="subtle" onClick={onClose} style={{ marginTop: '15px' }}>
+        <div className="modal-buttons">
+          <GCalAuthButton barbeariaId={newBarbeariaId} />
+          <Button variant="subtle" onClick={onClose}>
             Fechar
-        </Button>
+          </Button>
+        </div>
       </div>
     );
   }
-
+  
+  // -----------------------------------------------------------
+  // RENDERIZAÇÃO DO FORMULÁRIO PRINCIPAL
+  // -----------------------------------------------------------
   return (
     <div className="form-container">
-      <h2>Cadastre sua Barbearia (Passo 1)</h2>
-      {/* ... Renderização do formulário ... */}
+      <h2>Cadastre sua Barbearia</h2>
+      {error && <Notification color="red">{error}</Notification>}
       <form onSubmit={handleSubmit}>
         <TextInput label="Nome da Barbearia" name="nome" value={formData.nome} onChange={handleChange} required />
         <TextInput label="Nome do Proprietário" name="proprietario" value={formData.proprietario} onChange={handleChange} required />
-        <TextInput label="Telefone" type="tel" name="telefone" value={formData.telefone} onChange={handleChange} required />
-        <TextInput label="Email" type="email" name="email" value={formData.email} onChange={handleChange} required />
-        <TextInput label="Endereço Completo" name="endereco" value={formData.endereco} onChange={handleChange} required />
-        
-        <Button 
-          variant="filled" 
-          color="green" 
-          size="lg" 
-          type="submit" 
-          style={{ marginTop: '20px' }} 
-          fullWidth
-          disabled={isLoading}
-        >
-          {isLoading ? <Loader size="sm" color="white" /> : 'Registrar Barbearia'}
+        <TextInput label="Telefone" name="telefone" value={formData.telefone} onChange={handleChange} required />
+        <TextInput label="Email" name="email" value={formData.email} onChange={handleChange} required />
+        <TextInput label="Endereço" name="endereco" value={formData.endereco} onChange={handleChange} required />
+
+        <Select
+          label="Intervalo (minutos)"
+          data={[
+            { value: "15", label: "15 minutos" },
+            { value: "30", label: "30 minutos" },
+            { value: "45", label: "45 minutos" },
+            { value: "60", label: "60 minutos" },
+          ]}
+          value={formData.intervalo}
+          onChange={handleSelectChange}
+          placeholder="Selecione um intervalo"
+          required
+        />
+
+        <Button type="submit" fullWidth disabled={isLoading}>
+          {isLoading ? <Loader size="sm" /> : "Registrar Barbearia"}
         </Button>
       </form>
     </div>

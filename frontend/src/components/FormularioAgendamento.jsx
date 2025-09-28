@@ -1,172 +1,244 @@
-// src/components/FormularioAgendamento.jsx
+import React, { useEffect, useState, useCallback } from "react";
+import { TextInput, Button, Select, Notification, Loader, Stack } from "@mantine/core";
+import { DatePicker } from "@mantine/dates"; 
+import { supabase } from "../supabaseClient";
+import "dayjs/locale/pt-br"; 
 
-import React, { useState, useEffect, useMemo } from 'react';
-import { TextInput, Button, Select, Loader, Notification } from '@mantine/core';
-import { supabase } from '../supabaseClient'; 
+// A URL base para suas Edge Functions
+const API_BASE = import.meta.env.VITE_API_BASE; 
 
 const FormularioAgendamento = ({ onClose }) => {
-  const [formData, setFormData] = useState({
-    barbearia_id: '',
-    data: '',
-    hora: '',
-    servico: '',
-    nome: '',
-    email: '',
-    telefone: ''
-  });
   const [barbearias, setBarbearias] = useState([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState(null);
-  const [success, setSuccess] = useState(false);
+  const [selectedShop, setSelectedShop] = useState("");
+  const [clienteNome, setClienteNome] = useState("");
+  const [clienteEmail, setClienteEmail] = useState("");
+  const [servico, setServico] = useState("");
+  
+  // Data e Horários
+  const [data, setData] = useState(null);
+  const [horarios, setHorarios] = useState([]);
+  const [selectedHora, setSelectedHora] = useState("");
+  
+  // Estados de UI
+  const [loadingShops, setLoadingShops] = useState(true); // NOVO: Carregamento inicial de lojas
+  const [loadingSlots, setLoadingSlots] = useState(false); // Carregamento de slots
+  const [errorMsg, setErrorMsg] = useState("");
+  const [successMsg, setSuccessMsg] = useState("");
 
-  const slotsDisponiveis = ['09:00', '10:30', '12:00', '14:00', '15:30', '17:00'];
-
+  // 1. Carrega barbearias
   useEffect(() => {
-    const fetchBarbearias = async () => {
+    const fetchShops = async () => {
+      setLoadingShops(true);
+      setErrorMsg("");
       const { data, error } = await supabase
-        .from('barbearias')
-        .select('id, nome')
-        .eq('gcal_auth_status', 'conectado');
+        .from("barbearias")
+        .select("id, nome");
       
       if (error) {
-        setError("Não foi possível carregar a lista de barbearias.");
+        setErrorMsg("Erro ao carregar lista de barbearias.");
       } else {
-        setBarbearias(data);
+        setBarbearias(data.map((s) => ({ value: s.id, label: s.nome })));
       }
+      setLoadingShops(false);
     };
-    fetchBarbearias();
+    fetchShops();
   }, []);
 
-  const barbeariasData = useMemo(
-    () => barbearias.map(b => ({ value: b.id, label: b.nome })), 
-    [barbearias]
-  );
+  // 2. Carrega horários disponíveis ao mudar Loja ou Data (Chama a Edge Function)
+  const fetchHorarios = useCallback(async () => {
+    if (!selectedShop || !(data instanceof Date) || isNaN(data.getTime())) {
+        setHorarios([]);
+        return;
+    }
 
-  const handleChange = (field, value) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
-  };
+    setLoadingSlots(true);
+    setErrorMsg("");
+    setSelectedHora("");
+    
+    const formattedDate = data.toISOString().split('T')[0];
+    
+    try {
+        const response = await fetch(`${API_BASE}/horarios-disponiveis?shopId=${selectedShop}&date=${formattedDate}`);
+        
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || "Erro ao buscar horários.");
+        }
+        
+        const slots = await response.json();
+        setHorarios(slots.map(h => ({ value: h, label: h })));
 
-  const getOrCreateClient = async (nome, email, telefone) => {
-    // Placeholder: aqui você poderia buscar ou criar cliente no Supabase
-    return 'cliente-id-temp';
-  };
+    } catch (e) {
+        setErrorMsg(e.message || "Erro desconhecido ao carregar horários.");
+    } finally {
+        setLoadingSlots(false);
+    }
+  }, [selectedShop, data]);
 
+  useEffect(() => {
+    fetchHorarios();
+  }, [fetchHorarios]);
+
+  // 3. Submissão do Agendamento
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setIsLoading(true);
-    setError(null);
-    setSuccess(false);
+    setLoadingSlots(true); // Reutiliza o estado de loading para o envio
+    setErrorMsg("");
+    setSuccessMsg("");
+
+    // ... (restante da validação e lógica de envio) ...
+    if (!selectedShop || !data || !selectedHora || !clienteEmail || !clienteNome || !servico) {
+        setErrorMsg("Por favor, preencha todos os campos obrigatórios.");
+        setLoadingSlots(false);
+        return;
+    }
+    
+    const formattedDate = data.toISOString().split('T')[0];
+    const fullDateTime = `${formattedDate}T${selectedHora}:00`; 
+    
+    const payload = {
+      shopId: selectedShop,
+      clienteNome,
+      clienteEmail,
+      servico,
+      dataHora: fullDateTime,
+    };
 
     try {
-      const clienteId = await getOrCreateClient(formData.nome, formData.email, formData.telefone);
-      const dataHoraInicio = `${formData.data}T${formData.hora}:00-03:00`;
-      const dataHoraFim = `${formData.data}T${formData.hora}:00-03:00`; // ajuste futuro para duração
+        const response = await fetch(`${API_BASE}/agendar-gcal`, { 
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+        });
 
-      const response = await fetch("http://localhost:5173/agendamento", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          barbearia_id: formData.barbearia_id,
-          cliente_nome: formData.nome,
-          cliente_email: formData.email,
-          cliente_telefone: formData.telefone,
-          servico: formData.servico,
-          data_hora_inicio: dataHoraInicio,
-          data_hora_fim: dataHoraFim,
-        }),
-      });
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || "Falha ao agendar. Tente novamente.");
+        }
 
-      if (response.status === 409) {
-        // Horário já agendado
-        throw new Error("Horário já agendado. Escolha outro horário.");
-      }
+        setSuccessMsg("🎉 Horário agendado com sucesso! Verifique seu e-mail.");
 
-      if (!response.ok) {
-        throw new Error("Erro ao agendar no servidor.");
-      }
-
-      setSuccess(true);
-      setFormData({
-        barbearia_id: '',
-        data: '',
-        hora: '',
-        servico: '',
-        nome: '',
-        email: '',
-        telefone: ''
-      });
-
-      if (onClose) onClose();
-
-    } catch (err) {
-      console.error(err);
-      setError(err.message);
+    } catch (e) {
+        setErrorMsg(e.message || "Ocorreu um erro inesperado.");
     } finally {
-      setIsLoading(false);
+        setLoadingSlots(false);
     }
   };
 
-  return (
-    <div className="form-container">
-      <h2>Agende seu Horário</h2>
+  // 4. Renderização do Conteúdo
+  let content;
 
-      {error && <Notification color="red" onClose={() => setError(null)}>{error}</Notification>}
-      {success && <Notification color="green" onClose={() => setSuccess(false)}>Agendamento realizado com sucesso!</Notification>}
-
-      <form onSubmit={handleSubmit}>
-        <Select
-          label="Escolha a Barbearia"
-          placeholder="Selecione a barbearia"
-          data={barbeariasData}
-          value={formData.barbearia_id}
-          onChange={(value) => handleChange('barbearia_id', value)}
-          required
-        />
-
-        <TextInput 
-          label="Data" 
-          type="date" 
-          value={formData.data} 
-          onChange={(e) => handleChange('data', e.target.value)} 
-          required 
-        />
-        
-        <Select
-          label="Horário Disponível"
-          placeholder="Selecione um horário"
-          data={slotsDisponiveis}
-          value={formData.hora}
-          onChange={(value) => handleChange('hora', value)}
-          required
-        />
-        
-        <Select
-          label="Serviço"
-          data={['Corte de Cabelo', 'Barba', 'Corte e Barba', 'Outro']}
-          value={formData.servico}
-          onChange={(value) => handleChange('servico', value)}
-          required
-          withinPortal={true} 
-        />
-
-        <TextInput label="Nome Completo" value={formData.nome} onChange={(e) => handleChange('nome', e.target.value)} required />
-        <TextInput label="Email" type="email" value={formData.email} onChange={(e) => handleChange('email', e.target.value)} required />
-        <TextInput label="Telefone" type="tel" value={formData.telefone} onChange={(e) => handleChange('telefone', e.target.value)} required />
-        
-        <Button 
-          variant="filled" 
-          color="green" 
-          size="lg" 
-          type="submit" 
-          style={{ marginTop: '20px' }} 
-          fullWidth
-          disabled={isLoading}
-        >
-          {isLoading ? <Loader size="sm" color="white" /> : 'Confirmar Agendamento'}
+  if (loadingShops) {
+    // Estado de Carregamento Inicial
+    content = (
+      <div className="form-container" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '300px' }}>
+        <Loader size="lg" color="green" />
+        <h3 style={{ color: 'white', marginTop: '20px' }}>Carregando dados das barbearias...</h3>
+      </div>
+    );
+  } else if (barbearias.length === 0) {
+    // Estado de Lista Vazia (Mensagem que você queria)
+    content = (
+      <div className="form-container">
+        <h2>Agendar Horário</h2>
+        <Notification title="Nenhuma Barbearia Encontrada" color="yellow" style={{ marginTop: 20 }}>
+          Desculpe, não há nenhuma barbearia registrada no momento.
+          Por favor, tente novamente mais tarde.
+        </Notification>
+        <Button variant="outline" color="gray" fullWidth mt="xl" onClick={onClose}>
+          Fechar
         </Button>
-      </form>
-    </div>
-  );
+      </div>
+    );
+  } else {
+    // Estado de Formulário (Normal)
+    content = (
+      <div className="form-container"> 
+        <h2>Agendar Horário</h2>
+        
+        {errorMsg && (
+          <Notification title="Erro" color="red" onClose={() => setErrorMsg("")} style={{ marginTop: 10 }}>
+            {errorMsg}
+          </Notification>
+        )}
+        {successMsg && (
+          <Notification title="Sucesso!" color="green" onClose={() => setSuccessMsg("")} style={{ marginTop: 10 }}>
+            {successMsg}
+          </Notification>
+        )}
+
+        <form onSubmit={handleSubmit}>
+          <Stack spacing="md"> 
+            <TextInput
+              label="Nome"
+              placeholder="Seu nome completo"
+              value={clienteNome}
+              onChange={(e) => setClienteNome(e.target.value)}
+              required
+            />
+            <TextInput
+              label="Email"
+              placeholder="seu-email@exemplo.com"
+              value={clienteEmail}
+              onChange={(e) => setClienteEmail(e.target.value)}
+              type="email"
+              required
+            />
+            <TextInput
+              label="Serviço"
+              placeholder="Ex: Corte e Barba"
+              value={servico}
+              onChange={(e) => setServico(e.target.value)}
+              required
+            />
+
+            <Select
+              label="Barbearia"
+              data={barbearias}
+              value={selectedShop}
+              onChange={setSelectedShop}
+              placeholder="Selecione a Barbearia"
+              required
+            />
+            
+            <DatePicker
+              label="Data"
+              value={data}
+              onChange={setData}
+              minDate={new Date()} 
+              locale="pt-br" 
+              placeholder="Selecione a Data"
+              required
+            />
+
+            {/* Slot de Horários */}
+            {loadingSlots ? (
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', color: '#fff', marginTop: '15px' }}>
+                <Loader size="sm" color="white" />
+                <span>Carregando horários...</span>
+              </div>
+            ) : (
+              <Select
+                label="Horário"
+                data={horarios}
+                value={selectedHora}
+                onChange={setSelectedHora}
+                placeholder={selectedShop && data ? "Escolha um horário" : "Selecione a Barbearia e a Data primeiro"}
+                required
+                disabled={horarios.length === 0}
+              />
+            )}
+
+            <Button type="submit" fullWidth mt="xl" color="green" size="lg" disabled={loadingSlots}>
+              {loadingSlots ? <Loader size="sm" color="white" /> : "Confirmar Agendamento"}
+            </Button>
+          </Stack>
+        </form>
+      </div>
+    );
+  }
+  
+  return content;
 };
 
 export default FormularioAgendamento;

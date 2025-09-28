@@ -41,6 +41,7 @@ img {
   
   --font-family-base: 'Montserrat', sans-serif;
   --font-size-base: 0.75rem; 
+  --border-radius: 8px; 
 }
 
 /* --- Estilos Globais do corpo da página --- */
@@ -279,11 +280,11 @@ body {
   overflow-y: auto;
 }
 
-/* Dropdown Mantine */
+/* CORREÇÃO CRÍTICA DE Z-INDEX E PORTAL (Mantine) */
 .mantine-Select-dropdown,
 .mantine-Popover-dropdown,
 .mantine-Menu-dropdown {
-  z-index: 100000 !important; 
+  z-index: 100001 !important; /* Aumenta Z-index para garantir que fique acima do modal */
 }
 
 /* Botão de fechar */
@@ -322,7 +323,7 @@ body {
   gap: 15px;
 }
 
-/* Inputs e selects padrão do modal */
+/* Inputs e selects padrão do modal (para inputs HTML nativos) */
 .modal-content label {
   color: var(--primary-text-color) !important; 
   font-weight: 600 !important;
@@ -341,25 +342,92 @@ body {
   color: #999999 !important;
 }
 
-/* --- Correção para Mantine Components --- */
+/* --- Correção para Mantine Components (Input principal, Select e DatePicker) --- */
+/* GARANTINDO O ESTILO DO CAMPO PRINCIPAL (FUNDO ESCURO, TEXTO BRANCO) */
 .modal-content .mantine-TextInput-input,
 .modal-content .mantine-Textarea-textarea,
-.modal-content .mantine-Select-input {
-  color: var(--primary-text-color);
-  background-color: #2b2b2b;
-  border-color: #444444;
+.modal-content .mantine-Select-input,
+.modal-content .mantine-DatePicker-input {
+  color: var(--primary-text-color) !important;
+  background-color: #2b2b2b !important;
+  border-color: #444444 !important;
 }
 
 .modal-content .mantine-TextInput-input::placeholder,
 .modal-content .mantine-Textarea-textarea::placeholder,
-.modal-content .mantine-Select-input::placeholder {
-  color: #999999;
+.modal-content .mantine-Select-input::placeholder,
+.modal-content .mantine-DatePicker-input::placeholder {
+  color: #999999 !important;
 }
 
 /* Botões dentro do modal (container flex) */
 .modal-content .mantine-Button-root {
   margin-top: 10px;
 }
+
+/* ------------------------------------------------------------------------------------------------------- */
+/* --- CORREÇÃO DE VISIBILIDADE E RECORTE (SELECT) --- */
+
+/* 1. Força o fundo da caixa de opções (dropdown) a ser BRANCO (Se Mantine estiver aplicando Light Mode) */
+.modal-content .mantine-Select-dropdown, 
+.modal-content .mantine-DatePicker-dropdown {
+  background-color: #ffffff !important; 
+  border: 1px solid #444444 !important;
+  border-radius: var(--border-radius) !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+}
+
+/* 2. SOLUÇÃO MAIS AGRESSIVA PARA FORÇAR O TEXTO PRETO (anula Mantine Dark Mode) */
+/* Aplica a cor preta em TODOS os elementos dentro do dropdown */
+.modal-content .mantine-Select-dropdown * {
+    color: #000000 !important; 
+}
+
+/* 3. Estilo do item do Select no hover/selecionado - Fundo de destaque */
+/* Garante que o item individual tenha fundo no hover e cor de texto correta */
+.modal-content .mantine-Select-item,
+.modal-content .mantine-Select-item[data-selected],
+.modal-content .mantine-Select-item:hover {
+  background-color: #ffffff !important; /* Fundo branco para opções não selecionadas */
+  color: #000000 !important;
+}
+
+.modal-content .mantine-Select-item:hover {
+    background-color: #f0f0f0 !important; /* Fundo cinza claro no hover */
+}
+
+
+/* --- Correções Específicas para o DatePicker (Calendário Interno) --- */
+
+/* Mantém o calendário no tema escuro, se essa for a intenção. */
+.modal-content .mantine-DatePicker-month,
+.modal-content .mantine-DatePicker-monthHeader,
+.modal-content .mantine-DatePicker-weekdaysRow,
+.modal-content .mantine-DatePicker-calendarHeader {
+    color: var(--primary-text-color) !important;
+    background-color: #2b2b2b !important; 
+}
+
+/* Estilo dos botões de navegação (setas) */
+.modal-content .mantine-DatePicker-control {
+    color: var(--accent-color) !important;
+    background-color: transparent !important;
+}
+
+/* Estilo do dia não selecionado (número) */
+.modal-content .mantine-DatePicker-day {
+    color: var(--secondary-text-color) !important;
+    background-color: transparent !important;
+}
+
+/* Estilo do dia selecionado (círculo verde) */
+.modal-content .mantine-DatePicker-day[data-selected] {
+    background-color: var(--accent-color) !important;
+    color: #fff !important;
+    border-radius: 50% !important;
+}
+
+/* ------------------------------------------------------------------------------------------------------- */
 
 /* Animações */
 @keyframes fadeIn {
