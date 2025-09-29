@@ -1,17 +1,26 @@
-// frontend/src/components/GCalAuthButton.jsx
-import React from "react";
+import React from 'react';
+import { Button } from '@mantine/core';
 
 const GCalAuthButton = ({ barbeariaId }) => {
-  const onConnect = () => {
-    const url = `${import.meta.env.VITE_API_BASE}/auth/google/shop?shop_id=${barbeariaId}`;
-    // abre em nova aba para o fluxo OAuth
-    window.open(url, "_blank", "noopener,noreferrer");
+  const handleAuthClick = () => {
+    if (!barbeariaId) {
+      alert("Erro: A barbearia precisa ser cadastrada primeiro.");
+      return;
+    }
+    // use 'state' param to pass the id through the oauth flow
+    window.location.href = `/api/auth/google?shop_id=${barbeariaId}`;
   };
 
   return (
-    <button type="button" onClick={onConnect} className="btn">
-      Conectar Google Calendar
-    </button>
+    <Button 
+      variant="outline" 
+      color="red" 
+      onClick={handleAuthClick} 
+      style={{ marginTop: '15px' }}
+      fullWidth
+    >
+      Conectar Google Calendar (Passo 2)
+    </Button>
   );
 };
 

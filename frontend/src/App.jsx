@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import Header from './components/Header.jsx';
 import Section from './components/Section.jsx';
 import Footer from './components/Footer.jsx';
-import Modal from './components/Modal.jsx';
 import FormularioAgendamento from './components/FormularioAgendamento.jsx';
 import FormularioCadastro from './components/FormularioCadastro.jsx';
 import { Button } from '@mantine/core';
@@ -26,7 +25,8 @@ function App() {
   };
 
   const handleGoogleLogin = () => {
-    window.location.href = "http://localhost:5173/auth/google";
+    // open cadastro modal so user can register and then connect Google from the success screen
+    openModal('cadastro');
   };
 
   return (
@@ -93,10 +93,12 @@ function App() {
 
       <Footer />
 
-      <Modal isOpen={isModalOpen} onClose={closeModal}>
-        {modalContent === 'agendamento' && <FormularioAgendamento onClose={closeModal} />}
-        {modalContent === 'cadastro' && <FormularioCadastro onClose={closeModal} />}
-      </Modal>
+      {modalContent === 'agendamento' && (
+        <FormularioAgendamento isOpen={isModalOpen} onClose={closeModal} />
+      )}
+      {modalContent === 'cadastro' && (
+        <FormularioCadastro isOpen={isModalOpen} onClose={closeModal} />
+      )}
     </>
   );
 }
