@@ -13,6 +13,10 @@ const FormularioCadastro = ({ isOpen, onClose }) => {
     intervalo: 30,
     fuso_horario: 'America/Sao_Paulo'
   });
+  // daysOpen will hold strings '0'..'6' for selected weekdays
+  const [daysOpen, setDaysOpen] = useState(['1','2','3','4','5']);
+  const [defaultOpenTime, setDefaultOpenTime] = useState('09:00');
+  const [defaultCloseTime, setDefaultCloseTime] = useState('17:00');
 
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -30,6 +34,14 @@ const FormularioCadastro = ({ isOpen, onClose }) => {
     setError(null);
 
     try {
+      // build horarios from selected days using default times
+      const payloadHorarios = daysOpen.map(d => ({
+        dia_semana: Number(d),
+        hora_abertura: defaultOpenTime + ':00',
+        hora_fechamento: defaultCloseTime + ':00',
+        intervalo_minutos: formData.intervalo
+      }));
+
       const res = await fetch('/api/barbearias', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -41,6 +53,7 @@ const FormularioCadastro = ({ isOpen, onClose }) => {
           endereco: formData.endereco,
           intervalo: formData.intervalo,
           fuso_horario: formData.fuso_horario,
+          horarios: payloadHorarios,
         }),
       });
 
@@ -108,9 +121,46 @@ const FormularioCadastro = ({ isOpen, onClose }) => {
           <TextInput label="Email" type="email" name="email" value={formData.email} onChange={handleChange} required />
           <TextInput label="Endereço Completo" name="endereco" value={formData.endereco} onChange={handleChange} required />
 
-          <NumberInput label="Intervalo (min)" name="intervalo" value={formData.intervalo} onChange={(val) => setFormData(prev => ({ ...prev, intervalo: val }))} min={15} step={15} />
-
           <Select label="Fuso horário" data={[{ value: 'America/Sao_Paulo', label: 'São Paulo' }, { value: 'America/Manaus', label: 'Manaus' }, { value: 'America/New_York', label: 'Nova York' }, { value: 'Europe/Lisbon', label: 'Lisboa' }]} value={formData.fuso_horario} onChange={(val) => setFormData(prev => ({ ...prev, fuso_horario: val }))} />
+
+          <div style={{ marginTop: 12 }}>
+            <h4 style={{ color: '#fff', marginBottom: 8 }}>Dias de Funcionamento (marque os dias)</h4>
+            <div style={{ display: 'flex', gap: 6, marginBottom: 8, flexWrap: 'wrap' }}>
+              {[
+                { v: '0', label: 'Dom' },
+                { v: '1', label: 'Seg' },
+                { v: '2', label: 'Ter' },
+                { v: '3', label: 'Qua' },
+                { v: '4', label: 'Qui' },
+                { v: '5', label: 'Sex' },
+                { v: '6', label: 'Sáb' },
+              ].map(d => (
+                <Button
+                  key={d.v}
+                  variant={daysOpen.includes(d.v) ? 'filled' : 'outline'}
+                  color={daysOpen.includes(d.v) ? 'green' : 'gray'}
+                  onClick={() => setDaysOpen(prev => prev.includes(d.v) ? prev.filter(x => x !== d.v) : [...prev, d.v])}
+                >
+                  {d.label}
+                </Button>
+              ))}
+            </div>
+
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 8 }}>
+              <div style={{ display: 'flex', flexDirection: 'column' }}>
+                <label style={{ color: '#fff', fontSize: 12 }}>Hora abertura padrão</label>
+                <input type="time" value={defaultOpenTime} onChange={(e) => setDefaultOpenTime(e.target.value)} style={{ width: 140, padding: '6px', borderRadius: 4 }} />
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column' }}>
+                <label style={{ color: '#fff', fontSize: 12 }}>Hora fechamento padrão</label>
+                <input type="time" value={defaultCloseTime} onChange={(e) => setDefaultCloseTime(e.target.value)} style={{ width: 140, padding: '6px', borderRadius: 4 }} />
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column' }}>
+                <label style={{ color: '#fff', fontSize: 12 }}>Intervalo (min)</label>
+                <NumberInput value={formData.intervalo} onChange={(val) => setFormData(prev => ({ ...prev, intervalo: val }))} min={15} step={15} style={{ width: 120 }} />
+              </div>
+            </div>
+          </div>
 
           <Button 
             variant="filled" 

@@ -74,6 +74,7 @@ export function setupRoutes(app) {
   // 🔹 3) Criar agendamento
   app.post("/api/agendamento", async (req, res) => {
     const { shop_id, cliente_nome, cliente_email, cliente_telefone, servico, data_hora_inicio, data_hora_fim } = req.body;
+    console.log('[agendamento] recebendo:', { shop_id, cliente_email, data_hora_inicio, data_hora_fim });
 
     try {
       // 1. Verifica se cliente já existe
@@ -107,7 +108,12 @@ export function setupRoutes(app) {
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('[agendamento] erro insert:', error);
+        throw error;
+      }
+
+      console.log('[agendamento] criado id:', agendamento?.id);
 
       // 3. Busca tokens do Google
       const { data: tokens } = await supabase
@@ -177,6 +183,98 @@ export function setupRoutes(app) {
     }
   });
 
+  // 🔹 4b) Obter dados de uma barbearia e seus horários
+  app.get('/api/barbearias/:id', async (req, res) => {
+    const { id } = req.params;
+    try {
+      const { data: barbearia, error: bErr } = await supabase
+        .from('barbearias')
+        .select('id, nome, intervalo, fuso_horario')
+        .eq('id', id)
+        .single();
+
+      if (bErr) throw bErr;
+
+      const { data: horarios, error: hErr } = await supabase
+        .from('barbearia_horarios')
+        .select('dia_semana, hora_abertura, hora_fechamento, intervalo_minutos')
+        .eq('shop_id', id);
+
+      if (hErr) throw hErr;
+
+      res.json({ success: true, barbearia, horarios });
+    } catch (err) {
+      console.error('/api/barbearias/:id erro', err);
+      res.status(500).json({ success: false, error: err?.message || 'Erro ao buscar barbearia' });
+    }
+  });
+
+  // 🔹 4c) Disponibilidade: retorna slots disponíveis para uma barbearia em uma data (YYYY-MM-DD)
+  app.get('/api/barbearias/:id/availability', async (req, res) => {
+    const { id } = req.params;
+    const { date } = req.query; // expected YYYY-MM-DD
+
+    if (!date) return res.status(400).json({ success: false, error: 'Parâmetro date é obrigatório (YYYY-MM-DD)' });
+
+    try {
+      // fetch barbearia and horarios
+      const { data: barbearia } = await supabase.from('barbearias').select('id, intervalo, fuso_horario').eq('id', id).single();
+      const { data: horarios } = await supabase.from('barbearia_horarios').select('dia_semana, hora_abertura, hora_fechamento, intervalo_minutos').eq('shop_id', id);
+
+      // determine weekday (0 Sunday .. 6 Saturday) from date
+      const day = new Date(date + 'T00:00:00').getDay();
+
+      // find horarios for that weekday
+      const todays = (horarios || []).filter(h => Number(h.dia_semana) === Number(day));
+
+      // if none, fallback to single block 09:00-17:00 with barbearia.intervalo
+      const periods = todays.length ? todays : [{ hora_abertura: '09:00:00', hora_fechamento: '17:00:00', intervalo_minutos: barbearia?.intervalo || 30 }];
+
+      // fetch existing appointments for that date
+      const dayStart = `${date}T00:00:00Z`;
+      const dayEnd = `${date}T23:59:59Z`;
+      const { data: appointments } = await supabase.from('appointments').select('data_hora_inicio, data_hora_fim').eq('shop_id', id).gte('data_hora_inicio', dayStart).lte('data_hora_inicio', dayEnd);
+
+      // helper to parse time 'HH:MM:SS' and produce Date for the given date
+      const makeDateTime = (d, timeStr) => new Date(`${d}T${timeStr}`);
+
+      const slots = [];
+
+      for (const p of periods) {
+        const intervalo = p.intervalo_minutos || barbearia?.intervalo || 30;
+        let current = makeDateTime(date, p.hora_abertura);
+        const end = makeDateTime(date, p.hora_fechamento);
+
+        while (current.getTime() + intervalo * 60000 <= end.getTime()) {
+          const slotStart = new Date(current);
+          const slotEnd = new Date(current.getTime() + intervalo * 60000);
+
+          // check overlap with any appointment
+          const overlap = (appointments || []).some(ap => {
+            try {
+              const apStart = new Date(ap.data_hora_inicio);
+              const apEnd = new Date(ap.data_hora_fim);
+              return apStart < slotEnd && apEnd > slotStart;
+            } catch (e) {
+              return false;
+            }
+          });
+
+          if (!overlap) {
+            slots.push({ start: slotStart.toISOString(), end: slotEnd.toISOString() });
+          }
+
+          current = new Date(current.getTime() + intervalo * 60000);
+        }
+      }
+
+      res.json({ success: true, slots });
+    } catch (err) {
+      console.error('/api/barbearias/:id/availability erro', err);
+      res.status(500).json({ success: false, error: err?.message || 'Erro ao calcular disponibilidade' });
+    }
+  });
+
     // 🔹 4) Cadastro de Barbearia
   app.post("/api/barbearias", async (req, res) => {
     const { nome, proprietario, email, telefone, endereco, intervalo, fuso_horario } = req.body;
@@ -188,12 +286,52 @@ export function setupRoutes(app) {
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Erro insert barbearia:', error);
+        throw error;
+      }
 
-      res.json({ success: true, barbearia: data });
+      console.log('Barbearia cadastrada:', { id: data?.id, nome: data?.nome });
+
+      // if horarios provided, insert them linked to the created barbearia
+      const horariosPayload = req.body.horarios;
+      let createdHorarios = [];
+      if (Array.isArray(horariosPayload) && horariosPayload.length) {
+        // validate each horario
+        const invalid = horariosPayload.find(h => h.dia_semana == null || !h.hora_abertura || !h.hora_fechamento);
+        if (invalid) {
+          console.error('Payload horarios inválido', invalid);
+          return res.status(400).json({ success: false, error: 'Horarios inválidos. Cada item precisa ter dia_semana, hora_abertura e hora_fechamento.' });
+        }
+        try {
+          const toInsert = horariosPayload.map(h => ({
+            shop_id: data.id,
+            dia_semana: h.dia_semana,
+            hora_abertura: h.hora_abertura,
+            hora_fechamento: h.hora_fechamento,
+            intervalo_minutos: h.intervalo_minutos ?? h.intervalo_minutos
+          }));
+          const { data: inserted, error: insertHorError } = await supabase
+            .from('barbearia_horarios')
+            .insert(toInsert)
+            .select();
+          if (insertHorError) {
+            console.error('Erro insert horarios:', insertHorError);
+          } else {
+            createdHorarios = inserted;
+            console.log('Horarios criados:', createdHorarios.length);
+          }
+        } catch (hErr) {
+          console.error('Erro ao inserir horarios:', hErr);
+        }
+      }
+
+      res.json({ success: true, barbearia: data, horarios: createdHorarios });
     } catch (err) {
       console.error("Erro ao cadastrar barbearia:", err);
-      res.status(500).json({ success: false, error: "Erro ao cadastrar barbearia" });
+      // If the error came from Supabase, try to return its message
+      const errMsg = err?.message || err?.error || 'Erro ao cadastrar barbearia';
+      res.status(500).json({ success: false, error: errMsg });
     }
   });
 

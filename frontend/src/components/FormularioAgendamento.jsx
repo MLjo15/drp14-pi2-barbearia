@@ -13,6 +13,8 @@ const FormularioAgendamento = ({ isOpen, onClose }) => {
     telefone: '',
   });
   const [barbearias, setBarbearias] = useState([]);
+  const [slots, setSlots] = useState([]);
+  const [isSlotsLoading, setIsSlotsLoading] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
@@ -43,6 +45,50 @@ const FormularioAgendamento = ({ isOpen, onClose }) => {
   const handleChange = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
+
+  // when barbearia selected, fetch its details (intervalo) and clear slots
+  useEffect(() => {
+    const id = formData.barbearia_id;
+    if (!id) return;
+    (async () => {
+      try {
+        const res = await fetch(`/api/barbearias/${id}`);
+        const json = await res.json();
+        if (json.success && json.barbearia) {
+          // optionally store interval in local barbearias state
+          setBarbearias(prev => prev.map(b => b.id === id ? { ...b, intervalo: json.barbearia.intervalo } : b));
+          setSlots([]);
+        }
+      } catch (err) {
+        console.error('Erro fetch barbearia:', err);
+      }
+    })();
+  }, [formData.barbearia_id]);
+
+  // when date or barbearia changes, fetch availability
+  useEffect(() => {
+    const id = formData.barbearia_id;
+    const date = formData.data;
+    if (!id || !date) return;
+    setIsSlotsLoading(true);
+    (async () => {
+      try {
+        const res = await fetch(`/api/barbearias/${id}/availability?date=${date}`);
+        const json = await res.json();
+        if (json.success) {
+          // map slots to label/value for Mantine Select
+          setSlots(json.slots.map(s => ({ value: s.start, label: new Date(s.start).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), end: s.end })));
+        } else {
+          setSlots([]);
+        }
+      } catch (err) {
+        console.error('Erro fetch availability:', err);
+        setSlots([]);
+      } finally {
+        setIsSlotsLoading(false);
+      }
+    })();
+  }, [formData.barbearia_id, formData.data]);
 
   const getOrCreateClient = async (nome, email, telefone) => {
     // Placeholder: aqui você poderia buscar ou criar cliente no Supabase
@@ -147,11 +193,12 @@ const FormularioAgendamento = ({ isOpen, onClose }) => {
           
           <Select
             label="Horário Disponível"
-            placeholder="Selecione um horário"
-            data={slotsDisponiveis}
+            placeholder={isSlotsLoading ? 'Carregando...' : 'Selecione um horário'}
+            data={slots}
             value={formData.hora}
             onChange={(value) => handleChange('hora', value)}
             required
+            nothingFound={isSlotsLoading ? 'Carregando...' : 'Nenhum horário disponível'}
           />
           
           <Select
