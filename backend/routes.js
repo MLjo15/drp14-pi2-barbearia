@@ -231,9 +231,11 @@ export function setupRoutes(app) {
       const periods = todays.length ? todays : [{ hora_abertura: '09:00:00', hora_fechamento: '17:00:00', intervalo_minutos: barbearia?.intervalo || 30 }];
 
       // fetch existing appointments for that date
-      const dayStart = `${date}T00:00:00Z`;
-      const dayEnd = `${date}T23:59:59Z`;
-      const { data: appointments } = await supabase.from('appointments').select('data_hora_inicio, data_hora_fim').eq('shop_id', id).gte('data_hora_inicio', dayStart).lte('data_hora_inicio', dayEnd);
+  // Use local datetime range (no trailing Z) to match server timezone handling
+  const dayStart = `${date}T00:00:00`;
+  const dayEnd = `${date}T23:59:59`;
+  const { data: appointments } = await supabase.from('appointments').select('data_hora_inicio, data_hora_fim').eq('shop_id', id).gte('data_hora_inicio', dayStart).lte('data_hora_inicio', dayEnd);
+  console.log(`/api/barbearias/${id}/availability for ${date} - found appointments:`, (appointments || []).length);
 
       // helper to parse time 'HH:MM:SS' and produce Date for the given date
       const makeDateTime = (d, timeStr) => new Date(`${d}T${timeStr}`);

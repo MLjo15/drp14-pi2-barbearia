@@ -32,6 +32,9 @@ img {
 
 /* ------------------------------------------------------------------------------------------------------- */
 /* --- Variáveis de Estilo (Paleta de Cores e Fontes) --- */
+/* Comentários: Aqui definimos as variáveis CSS usadas por todo o tema.
+  Altere as cores principais, textos e a família tipográfica para
+  ajustar o visual global do site. */
 :root {
   --primary-bg-color: #1a1a1a;
   --secondary-bg-color: #1a1a1a;
@@ -62,6 +65,8 @@ body {
 
 /* ------------------------------------------------------------------------------------------------------- */
 /* --- Estilos do Cabeçalho e Navegação --- */
+/* Comentários: estilos do topo fixo (header) e da navegação. Inclui
+  comportamento responsivo e aparência do título principal. */
 .site-header {
   background-color: var(--secondary-bg-color);
   padding: 20px 0;
@@ -102,6 +107,9 @@ body {
 
 /* ------------------------------------------------------------------------------------------------------- */
 /* Estilos das Seções de Conteúdo */
+/* Comentários: regras gerais para as seções principais da página
+  (blocos com imagem + texto). Use .section.reverse-order para inverter
+  a ordem em telas maiores. */
 .section {
   padding: 10px 0;
   text-align: center;
@@ -175,6 +183,8 @@ body {
 
 /* ------------------------------------------------------------------------------------------------------- */
 /* --- Estilos da Galeria --- */
+/* Comentários: grade responsiva para imagens/portfólio. Ajuste gap e
+  min-width das colunas para controlar layout em diferentes larguras. */
 .gallery-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
@@ -201,6 +211,8 @@ body {
 
 /* ------------------------------------------------------------------------------------------------------- */
 /* --- Estilos do Rodapé --- */
+/* Comentários: estilo do footer, incluindo grid interno e links sociais.
+  As cores seguem as variáveis definidas acima. */
 .site-footer {
   background-color: var(--secondary-bg-color);
   color: var(--secondary-text-color);
@@ -252,6 +264,8 @@ body {
 
 /* ------------------------------------------------------------------------------------------------------- */
 /* --- Estilos do Modal --- */
+/* Comentários: estilos compartilhados pelo componente Modal usado para
+  formulários de agendamento. Inclui overlay, conteúdo e animações. */
 .modal-overlay {
   position: fixed; 
   top: 0;
@@ -280,7 +294,10 @@ body {
   overflow-y: auto;
 }
 
+.CORR_FIX_COMMENT /* comentário temporário para contexto */
 /* CORREÇÃO CRÍTICA DE Z-INDEX E PORTAL (Mantine) */
+/* Comentários: aqui forçamos z-index altos para dropdowns e popovers
+  gerados dentro do modal para que não fiquem atrás do overlay. */
 .mantine-Select-dropdown,
 .mantine-Popover-dropdown,
 .mantine-Menu-dropdown {
@@ -429,12 +446,222 @@ body {
 /* --- CORREÇÃO DE VISIBILIDADE E RECORTE (SELECT) --- */
 
 /* 1. Força o fundo da caixa de opções (dropdown) a ser BRANCO (Se Mantine estiver aplicando Light Mode) */
-.modal-content .mantine-Select-dropdown, 
-.modal-content .mantine-DatePicker-dropdown {
+.mantine-Select-dropdown {
+  /* Keep select dropdowns light so options are readable */
   background-color: #ffffff !important; 
   border: 1px solid #444444 !important;
   border-radius: var(--border-radius) !important;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+}
+
+/* Default popovers/dropdowns (including DatePicker) should match dark modal theme */
+.mantine-Popover-dropdown,
+.mantine-Popper-box,
+.mantine-Popper-root,
+.mantine-DatePicker-dropdown,
+.mantine-DayPicker,
+.mantine-DayPicker-wrapper {
+  background-color: #2b2b2b !important;
+  color: var(--primary-text-color) !important;
+  border-radius: 8px !important;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.6) !important;
+  padding: 6px !important;
+  max-width: 480px !important;
+  width: auto !important;
+}
+
+/* Force DayPicker internal panel (the white area) to dark and minimal */
+.mantine-DayPicker,
+.mantine-DayPicker-content,
+.mantine-DayPicker-wrapper,
+.mantine-DayPicker-month {
+  background-color: transparent !important;
+  color: var(--primary-text-color) !important;
+}
+
+/* Input field (the visible box) should be dark inside modal */
+.modal-content .mantine-DatePicker-input {
+  background-color: #2b2b2b !important;
+  color: var(--primary-text-color) !important;
+  border: 1px solid rgba(255,255,255,0.06) !important;
+}
+
+/* minimal arrows */
+.mantine-DatePicker-control {
+  background: transparent !important;
+  border: none !important;
+}
+
+/* ensure weekday labels are short Portuguese abbreviations and styled */
+.mantine-DayPicker-weekday {
+  font-size: 0.78rem !important;
+  color: var(--secondary-text-color) !important;
+}
+
+/* Force Portuguese abbreviations for Mantine DayPicker weekday labels (SEG, TER, QUA...) */
+.mantine-DayPicker-weekday {
+  color: transparent !important; /* hide original text */
+  position: relative !important;
+}
+.mantine-DayPicker-weekday::after {
+  content: '';
+  color: var(--secondary-text-color) !important;
+  position: absolute !important;
+  left: 50% !important;
+  transform: translateX(-50%) !important;
+  font-size: 0.78rem !important;
+}
+.mantine-DayPicker-weekday:nth-child(1)::after { content: 'SEG'; }
+.mantine-DayPicker-weekday:nth-child(2)::after { content: 'TER'; }
+.mantine-DayPicker-weekday:nth-child(3)::after { content: 'QUA'; }
+.mantine-DayPicker-weekday:nth-child(4)::after { content: 'QUI'; }
+.mantine-DayPicker-weekday:nth-child(5)::after { content: 'SEX'; }
+.mantine-DayPicker-weekday:nth-child(6)::after { content: 'SAB'; }
+.mantine-DayPicker-weekday:nth-child(7)::after { content: 'DOM'; }
+
+/* DatePicker popover: make roomier inside modal for better legibility */
+/* Scoped spacious popup: applies only when the component requests extra breathing room */
+.fc-datepicker-popup--spacious,
+.modal-content .mantine-DatePicker-dropdown.fc-datepicker-popup--spacious,
+.mantine-DatePicker-dropdown.fc-datepicker-popup--spacious {
+  background-color: #2b2b2b !important; /* match modal */
+  color: var(--primary-text-color) !important;
+  border: 1px solid rgba(255,255,255,0.06) !important;
+  border-radius: 8px !important;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.6) !important;
+  padding: 14px !important; /* more breathing room */
+  min-width: 520px !important; /* increased width to reduce cramped cells */
+  max-width: 620px !important;
+  width: auto !important;
+  box-sizing: border-box !important;
+}
+
+/* Further expansion: make the calendar use the extra lateral space when the spacious class is present */
+.fc-datepicker-popup--spacious .mantine-DatePicker-calendarHeader,
+.fc-datepicker-popup--spacious .fc-datepicker-calendarHeader {
+  display: grid !important;
+  grid-template-columns: 72px 1fr 72px !important; /* left chevron / title / right chevron */
+  align-items: center !important;
+  gap: 16px !important;
+  padding: 10px 16px !important;
+  height: 72px !important; /* taller header so title doesn't overlap */
+}
+
+.fc-datepicker-popup--spacious .mantine-DatePicker-monthHeader,
+.fc-datepicker-popup--spacious .fc-datepicker-monthHeader {
+  font-size: 1.02rem !important;
+  font-weight: 600 !important;
+  justify-self: center !important;
+}
+
+/* Larger chevrons area but keep svg small */
+.fc-datepicker-popup--spacious .mantine-DatePicker-calendarHeader .mantine-DatePicker-control,
+.fc-datepicker-popup--spacious .mantine-DatePicker-control,
+.fc-datepicker-popup--spacious .fc-datepicker-control {
+  width: 56px !important;
+  height: 56px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+.fc-datepicker-popup--spacious .mantine-DatePicker-calendarHeader .mantine-DatePicker-control svg,
+.fc-datepicker-popup--spacious .mantine-DatePicker-control svg,
+.fc-datepicker-popup--spacious .fc-datepicker-control svg {
+  width: 14px !important;
+  height: 14px !important;
+}
+
+/* Bigger day cells to take advantage of extra width */
+.fc-datepicker-popup--spacious .mantine-DatePicker-day {
+  width: 52px !important;
+  height: 52px !important;
+  line-height: 52px !important;
+  margin: 8px !important;
+  font-size: 1.05rem !important;
+  border-radius: 12px !important;
+}
+
+.fc-datepicker-popup--spacious .mantine-DatePicker-dropdown .mantine-DatePicker-day {
+  width: 48px !important;
+  height: 48px !important;
+  line-height: 48px !important;
+  margin: 8px !important;
+  font-size: 1rem !important;
+}
+
+.fc-datepicker-popup--spacious .fc-datepicker-day {
+  width: 46px !important;
+  height: 46px !important;
+  line-height: 46px !important;
+  margin: 8px !important;
+}
+
+/* Make internal DayPicker containers expand to use popup width so the blue calendar area fills the dropdown */
+.fc-datepicker-popup--spacious .mantine-DayPicker,
+.fc-datepicker-popup--spacious .mantine-DayPicker-wrapper,
+.fc-datepicker-popup--spacious .mantine-DayPicker-content,
+.fc-datepicker-popup--spacious .mantine-DayPicker-month,
+.fc-datepicker-popup--spacious .mantine-DatePicker-month {
+  width: 100% !important;
+  min-width: 360px !important;
+  max-width: none !important;
+  padding: 0 !important;
+  margin: 0 auto !important;
+  background: transparent !important;
+}
+
+/* Make the month render as a responsive 7-column grid that fills the container */
+.fc-datepicker-popup--spacious .mantine-DayPicker-month {
+  display: grid !important;
+  grid-template-columns: repeat(7, 1fr) !important;
+  gap: 8px !important;
+  justify-items: center !important;
+  align-items: center !important;
+}
+
+/* Let day cells size by grid column width so they fill the blue area instead of staying tiny */
+.fc-datepicker-popup--spacious .mantine-DatePicker-day,
+.fc-datepicker-popup--spacious .mantine-DayPicker-day,
+.fc-datepicker-popup--spacious .fc-datepicker-day {
+  width: auto !important;
+  height: auto !important;
+  padding: 8px 0 !important;
+  aspect-ratio: 1 / 1 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  font-size: 1rem !important;
+  border-radius: 8px !important;
+}
+
+/* Reduce outer padding so the blue calendar fills more of the dropdown */
+.fc-datepicker-popup--spacious {
+  padding: 8px !important;
+}
+
+/* Weekday labels slightly larger and spaced */
+.fc-datepicker-popup--spacious .mantine-DayPicker-weekday,
+.fc-datepicker-popup--spacious .fc-datepicker-weekdaysRow > * {
+  font-size: 0.9rem !important;
+  padding: 2px 6px !important;
+}
+
+/* Responsive cap: on small screens revert to a safe width */
+@media (max-width: 600px) {
+  .fc-datepicker-popup--spacious,
+  .modal-content .mantine-DatePicker-dropdown.fc-datepicker-popup--spacious,
+  .mantine-DatePicker-dropdown.fc-datepicker-popup--spacious {
+    min-width: 280px !important;
+    max-width: 340px !important;
+    padding: 8px !important;
+  }
+  .fc-datepicker-popup--spacious .mantine-DatePicker-day,
+  .fc-datepicker-popup--spacious .fc-datepicker-day {
+    width: 28px !important;
+    height: 28px !important;
+    margin: 2px !important;
+    font-size: 0.82rem !important;
+  }
 }
 
 /* 2. SOLUÇÃO MAIS AGRESSIVA PARA FORÇAR O TEXTO PRETO (anula Mantine Dark Mode) */
@@ -464,14 +691,200 @@ body {
 .modal-content .mantine-DatePicker-monthHeader,
 .modal-content .mantine-DatePicker-weekdaysRow,
 .modal-content .mantine-DatePicker-calendarHeader {
-    color: var(--primary-text-color) !important;
-    background-color: #2b2b2b !important; 
+  color: var(--primary-text-color) !important;
+  background-color: transparent !important; 
 }
 
 /* Estilo dos botões de navegação (setas) */
-.modal-content .mantine-DatePicker-control {
-    color: var(--accent-color) !important;
-    background-color: transparent !important;
+.mantine-DatePicker-control {
+  color: var(--accent-color) !important;
+  background-color: transparent !important;
+  width: 28px !important;
+  height: 28px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+.mantine-DatePicker-control svg {
+  width: 12px !important;
+  height: 12px !important;
+}
+
+/* compact month header and center it */
+.modal-content .mantine-DatePicker-calendarHeader {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 8px !important;
+  padding: 4px 8px !important;
+}
+.modal-content .mantine-DatePicker-monthHeader {
+  font-size: 0.95rem !important;
+  font-weight: 600 !important;
+}
+
+/* Force the month title to be centered between the left/right chevrons
+   and keep the chevrons pinned to the edges. This handles both Mantine
+   internal classes and our custom fc-datepicker class names. */
+.modal-content .mantine-DatePicker-calendarHeader,
+.mantine-DatePicker-calendarHeader,
+.fc-datepicker-calendarHeader {
+  position: relative !important;
+  justify-content: center !important; /* baseline centering; we'll absolutely position controls */
+  padding: 8px 8px !important;
+}
+.modal-content .mantine-DatePicker-monthHeader,
+.mantine-DatePicker-monthHeader,
+.fc-datepicker-monthHeader {
+  position: absolute !important;
+  left: 50% !important;
+  transform: translateX(-50%) !important;
+  z-index: 2 !important;
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  gap: 6px !important;
+  white-space: nowrap !important; /* prefer single-line month+year */
+  font-size: 0.78rem !important; /* reduced to avoid wrapping */
+  font-weight: 600 !important;
+  line-height: 1 !important;
+}
+
+/* Pin the navigation controls (chevrons) to the left and right inside the header */
+.modal-content .mantine-DatePicker-calendarHeader .mantine-DatePicker-control,
+.mantine-DatePicker-calendarHeader .mantine-DatePicker-control,
+.fc-datepicker-calendarHeader .fc-datepicker-control {
+  /* will be neutralized by the grid-based header below */
+  background: transparent !important;
+}
+.modal-content .mantine-DatePicker-calendarHeader .mantine-DatePicker-control:first-child,
+.mantine-DatePicker-calendarHeader .mantine-DatePicker-control:first-child,
+.fc-datepicker-calendarHeader .fc-datepicker-control:first-child {
+  left: 32px !important; /* increase spacing so title doesn't touch chevrons */
+}
+.modal-content .mantine-DatePicker-calendarHeader .mantine-DatePicker-control:last-child,
+.mantine-DatePicker-calendarHeader .mantine-DatePicker-control:last-child,
+.fc-datepicker-calendarHeader .fc-datepicker-control:last-child {
+  right: 32px !important; /* increase spacing so title doesn't touch chevrons */
+}
+
+/* Robust header layout: use grid to guarantee centered title between chevrons
+   This replaces fragile absolute positioning and works for both Mantine and
+   the custom fc-datepicker classes. */
+.mantine-DatePicker-calendarHeader,
+.fc-datepicker-calendarHeader {
+  display: grid !important;
+  grid-template-columns: 44px 1fr 44px !important; /* more space for chevrons */
+  align-items: center !important;
+  gap: 10px !important;
+  padding: 6px 10px !important;
+  height: 44px !important; /* taller header so title doesn't overlap */
+}
+
+/* Ensure the month title is centered in the middle column and not absolutely positioned */
+.mantine-DatePicker-monthHeader,
+.fc-datepicker-monthHeader {
+  position: static !important;
+  transform: none !important;
+  left: auto !important;
+  right: auto !important;
+  justify-self: center !important;
+  text-align: center !important;
+  max-width: 100% !important;
+  white-space: nowrap !important;
+}
+
+/* Make chevrons participate in the grid and keep them small */
+.mantine-DatePicker-calendarHeader .mantine-DatePicker-control,
+.mantine-DatePicker-control,
+.fc-datepicker-calendarHeader .fc-datepicker-control,
+.fc-datepicker-control {
+  position: static !important;
+  width: 36px !important;
+  height: 36px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  background: transparent !important;
+}
+
+/* Normalize SVG sizes for chevrons */
+.mantine-DatePicker-calendarHeader .mantine-DatePicker-control svg,
+.mantine-DatePicker-control svg,
+.fc-datepicker-calendarHeader .fc-datepicker-control svg,
+.fc-datepicker-control svg {
+  width: 12px !important;
+  height: 12px !important;
+  display: block !important;
+}
+
+/* Ensure month and year elements don't stack vertically; force inline layout */
+.modal-content .mantine-DatePicker-monthHeader > *,
+.mantine-DatePicker-monthHeader > *,
+.fc-datepicker-monthHeader > * {
+  display: inline-block !important;
+  vertical-align: middle !important;
+  margin: 0 4px !important;
+}
+
+/* Provide a max width so the centered title can't overflow and wrap; allows smaller font to keep single line */
+.modal-content .mantine-DatePicker-monthHeader,
+.mantine-DatePicker-monthHeader,
+.fc-datepicker-monthHeader {
+  max-width: calc(100% - 80px) !important;
+  text-align: center !important;
+}
+
+/* Fixed compact header height so title won't wrap to new line */
+.modal-content .mantine-DatePicker-calendarHeader,
+.mantine-DatePicker-calendarHeader,
+.fc-datepicker-calendarHeader {
+  height: 36px !important;
+}
+
+/* Make chevrons slightly smaller and guarantee they don't push layout */
+.modal-content .mantine-DatePicker-calendarHeader .mantine-DatePicker-control,
+.mantine-DatePicker-calendarHeader .mantine-DatePicker-control,
+.fc-datepicker-calendarHeader .fc-datepicker-control {
+  width: 28px !important;
+  height: 28px !important;
+  padding: 0 !important;
+}
+.modal-content .mantine-DatePicker-calendarHeader .mantine-DatePicker-control svg,
+.mantine-DatePicker-calendarHeader .mantine-DatePicker-control svg,
+.fc-datepicker-calendarHeader .fc-datepicker-control svg {
+  width: 12px !important;
+  height: 12px !important;
+  display: block !important;
+}
+
+/* Constrain dropdown width so the header looks proportional to the calendar grid */
+.mantine-DatePicker-dropdown,
+.fc-datepicker-dropdown {
+  min-width: 300px !important;
+  max-width: 340px !important;
+}
+
+/* calendar grid smaller cells */
+.modal-content .mantine-DatePicker-weekdaysRow,
+.modal-content .mantine-DatePicker-month {
+  font-size: 0.85rem !important;
+}
+.mantine-DatePicker-day {
+  width: 36px !important;
+  height: 36px !important;
+  line-height: 36px !important;
+  margin: 4px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  font-size: 0.95rem !important;
+  border-radius: 8px !important;
+}
+
+/* reduce whitespace below calendar */
+.modal-content .mantine-DatePicker-dropdown .mantine-DatePicker-month {
+  margin-bottom: 0 !important;
 }
 
 /* Estilo do dia não selecionado (número) */
@@ -485,6 +898,284 @@ body {
     background-color: var(--accent-color) !important;
     color: #fff !important;
     border-radius: 50% !important;
+}
+
+/* Disabled days (not in workingDays) should be dim and not interactive */
+.mantine-DatePicker-day[data-disabled],
+.mantine-DatePicker-day[aria-disabled="true"] {
+  opacity: 0.35 !important;
+  color: #777 !important;
+  cursor: not-allowed !important;
+  background-color: transparent !important;
+}
+
+/* Highlight available days on hover (when not disabled) */
+.mantine-DatePicker-day:not([data-disabled]):hover {
+  background-color: rgba(128,163,21,0.18) !important; /* subtle green */
+  color: var(--primary-text-color) !important;
+  border-radius: 6px !important;
+}
+
+/* Ensure DatePicker popover is positioned above modal contents */
+.mantine-DatePicker-dropdown {
+  z-index: 100002 !important;
+  overflow: visible !important;
+}
+
+/* Aggressive override for DatePicker internals to avoid any white panel or oversized icons */
+.modal-content .mantine-DatePicker-dropdown,
+.mantine-DatePicker-dropdown {
+  background-color: #2b2b2b !important;
+  color: var(--primary-text-color) !important;
+  border: 1px solid rgba(255,255,255,0.06) !important;
+  padding: 6px !important;
+  box-shadow: 0 12px 30px rgba(0,0,0,0.7) !important;
+  max-width: 360px !important;
+}
+
+/* Make sure all internal containers inherit the dark background */
+.mantine-DatePicker-dropdown .mantine-DayPicker,
+.mantine-DatePicker-dropdown .mantine-DayPicker-wrapper,
+.mantine-DatePicker-dropdown .mantine-DayPicker-content,
+.mantine-DatePicker-dropdown .mantine-DayPicker-month,
+.mantine-DatePicker-dropdown .mantine-DatePicker-month {
+  background: transparent !important;
+  color: var(--primary-text-color) !important;
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+/* Reduce oversized arrow icons — force reasonable sizes */
+.mantine-DatePicker-dropdown svg,
+.mantine-DatePicker-dropdown .mantine-Icon {
+  width: 18px !important;
+  height: 18px !important;
+}
+
+/* Calendar header compact */
+.mantine-DatePicker-dropdown .mantine-DatePicker-calendarHeader {
+  padding: 6px 8px !important;
+}
+.mantine-DatePicker-dropdown .mantine-DatePicker-monthHeader {
+  font-size: 0.95rem !important;
+  text-align: center !important;
+}
+
+/* Make the day grid compact and center it */
+.mantine-DatePicker-dropdown .mantine-DatePicker-weekdaysRow {
+  display: flex !important;
+  justify-content: center !important;
+  gap: 6px !important;
+  padding: 4px 0 !important;
+}
+.mantine-DatePicker-dropdown .mantine-DatePicker-month {
+  display: flex !important;
+  justify-content: center !important;
+}
+.mantine-DatePicker-dropdown .mantine-DatePicker-day {
+  width: 34px !important;
+  height: 34px !important;
+  line-height: 34px !important;
+  margin: 4px !important;
+  font-size: 0.9rem !important;
+}
+
+/* Ensure the input remains dark */
+.modal-content .mantine-DatePicker-input,
+.mantine-DatePicker-input {
+  background: #2b2b2b !important;
+  border: 1px solid rgba(255,255,255,0.06) !important;
+  color: var(--primary-text-color) !important;
+}
+
+/* If any inner element still has white bg, force transparency */
+.mantine-DatePicker-dropdown * {
+  background-color: transparent !important;
+  color: inherit !important;
+}
+
+/* Custom classNames overrides for DatePickerInput to ensure dark theme */
+.fc-datepicker-dropdown,
+.fc-datepicker-dropdown * {
+  background-color: #2b2b2b !important;
+  color: var(--primary-text-color) !important;
+}
+.fc-datepicker-input {
+  background-color: #2b2b2b !important;
+  color: var(--primary-text-color) !important;
+  border: 1px solid rgba(255,255,255,0.06) !important;
+}
+.fc-datepicker-monthHeader,
+.fc-datepicker-weekdaysRow {
+  color: var(--secondary-text-color) !important;
+}
+.fc-datepicker-day {
+  background: transparent !important;
+  color: var(--primary-text-color) !important;
+}
+.fc-datepicker-calendarHeader {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  padding: 6px 8px !important;
+}
+
+/*
+  TRECHO: Ajuste das setas/seletores do mês no DatePicker
+  - Aqui você pode alterar o tamanho das setas (chevrons) que navegam entre os meses
+  - Reduza ou aumente os valores abaixo para ajustar visual conforme preferência
+*/
+.fc-datepicker-monthHeader {
+  font-size: 0.95rem !important;
+  text-transform: lowercase !important;
+  margin: 0 auto !important;
+  font-weight: 600 !important;
+}
+.fc-datepicker-control {
+  /* tamanho reduzido para as setas do cabeçalho do calendário */
+  width: 10px !important;
+  height: 10px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 0 !important;
+}
+.fc-datepicker-control svg {
+  width: 10px !important;
+  height: 10px !important;
+}
+
+/*
+  GUIDE: Onde ajustar ícones e espaçamentos do DatePicker
+
+  - Chevrons (setas): ajuste .fc-datepicker-control e .fc-datepicker-control svg
+      Ex.: para setas menores use svg { width: 8px; height: 8px } e control { width: 18px }
+
+  - Tamanho do título do mês: .fc-datepicker-monthHeader { font-size: 0.9rem }
+
+  - Espaçamento lateral entre título e setas: modificar left/right em
+      .fc-datepicker-calendarHeader .fc-datepicker-control:first-child / :last-child
+
+  - Largura do popover: .fc-datepicker-dropdown { min-width / max-width }
+
+  - Tamanho das células (dias): .fc-datepicker-day { width/height/line-height }
+
+  - Se o calendário sobrepõe o campo 'Data', aumente o offset do Popover no componente React
+    (arquivo: src/components/FormularioAgendamento.jsx) adicionando `offset={12}` ao <Popover />.
+
+  Pequeno exemplo de alteração para reduzir as setas e aumentar o padding lateral:
+
+    .fc-datepicker-control { width: 18px !important; height: 18px !important }
+    .fc-datepicker-control svg { width: 8px !important; height: 8px !important }
+    .fc-datepicker-calendarHeader .fc-datepicker-control:first-child { left: 16px !important }
+    .fc-datepicker-calendarHeader .fc-datepicker-control:last-child { right: 16px !important }
+
+  Essas regras estão aqui para você ajustar rapidamente sem mexer no JSX.
+*/
+
+/* Garantir que quaisquer ícones grandes sejam escalados para um tamanho menor */
+.fc-datepicker-dropdown .mantine-Icon,
+.fc-datepicker-dropdown svg {
+  max-width: 30px !important;
+  max-height: 30px !important;
+}
+.fc-datepicker-day[data-disabled] {
+  opacity: 0.35 !important;
+  color: #777 !important;
+}
+.fc-datepicker-day:not([data-disabled]):hover {
+  background: rgba(128,163,21,0.18) !important;
+}
+
+/* --- Ajustes finais: centralizar calendário, reduzir setas e mostrar dias em PT-BR --- */
+.fc-datepicker-dropdown {
+  display: flex !important;
+  justify-content: center !important;
+  align-items: center !important;
+}
+.fc-datepicker-month {
+  display: block !important;
+  margin: 0 auto !important;
+}
+
+/* diminuir ainda mais as setas (chevrons) */
+.fc-datepicker-control {
+  width: 15px !important;
+  height: 15px !important;
+}
+.fc-datepicker-control svg {
+  width: 10px !important;
+  height: 10px !important;
+}
+
+/* Substituir os rótulos dos weekdays por abreviações em português
+   (usamos pseudo-elementos para garantir o texto desejado)
+*/
+.fc-datepicker-weekdaysRow > * {
+  color: transparent !important; /* esconder texto original */
+  position: relative !important;
+}
+.fc-datepicker-weekdaysRow > *::after {
+  content: '';
+  color: var(--secondary-text-color) !important;
+  position: absolute !important;
+  left: 50% !important;
+  transform: translateX(-50%) !important;
+  font-size: 0.78rem !important;
+}
+.fc-datepicker-weekdaysRow > *:nth-child(1)::after { content: 'SEG'; }
+.fc-datepicker-weekdaysRow > *:nth-child(2)::after { content: 'TER'; }
+.fc-datepicker-weekdaysRow > *:nth-child(3)::after { content: 'QUA'; }
+.fc-datepicker-weekdaysRow > *:nth-child(4)::after { content: 'QUI'; }
+.fc-datepicker-weekdaysRow > *:nth-child(5)::after { content: 'SEX'; }
+.fc-datepicker-weekdaysRow > *:nth-child(6)::after { content: 'SAB'; }
+.fc-datepicker-weekdaysRow > *:nth-child(7)::after { content: 'DOM'; }
+
+.fc-datepicker-month {
+  padding: 0 6px 8px 6px !important;
+}
+.fc-datepicker-day {
+  width: 32px !important;
+  height: 32px !important;
+  line-height: 32px !important;
+  margin: 4px !important;
+}
+
+/* Remover a aparência de 'caixa' / borda na linha onde está escrito "Data".
+   O TextInput recebe a classe root .fc-datepicker-input no JSX; aqui garantimos
+   que o rótulo não tenha fundo, borda ou pseudo-elementos que criem um contorno
+   visual diferente dos demais campos do formulário. Ajuste se necessário. */
+.fc-datepicker-input {
+  background: transparent !important; /* evita fundo diferente no root */
+  border: none !important; /* remove borda residual */
+  box-shadow: none !important;
+}
+.fc-datepicker-input .mantine-TextInput-label {
+  background: transparent !important;
+  padding: 0 !important;
+  margin: 0 0 6px 0 !important;
+  color: var(--primary-text-color) !important;
+  font-weight: 600 !important;
+}
+.fc-datepicker-input::before,
+.fc-datepicker-input::after,
+.fc-datepicker-input .mantine-TextInput-label::before,
+.fc-datepicker-input .mantine-TextInput-label::after {
+  display: none !important; /* removemos pseudo-elementos que possam gerar linha/borda */
+}
+
+
+/* Remover borda externa do popover do DatePicker para ficar igual aos outros campos */
+.fc-datepicker-dropdown,
+.mantine-DatePicker-dropdown {
+  border: none !important; /* remove a linha clara ao redor */
+  box-shadow: 0 12px 30px rgba(0,0,0,0.7) !important; /* mantém profundidade sem borda */
+}
+
+/* Caso alguma pseudo-element adicione borda, escondemos */
+.fc-datepicker-dropdown::before,
+.mantine-DatePicker-dropdown::before {
+  display: none !important;
 }
 
 /* ------------------------------------------------------------------------------------------------------- */
@@ -553,3 +1244,57 @@ body {
   background: #ccc !important;
   margin-top: 0.5rem;
 }
+
+/* Final overrides to ensure our spacious popup and day-state styles take effect
+   These rules are placed at the end to win against previous generic !important rules. */
+
+/* Ensure the spacious class always wins and removes restrictive max-widths applied earlier */
+.modal-content .mantine-DatePicker-dropdown.fc-datepicker-popup--spacious,
+.mantine-DatePicker-dropdown.fc-datepicker-popup--spacious,
+.fc-datepicker-popup--spacious.mantine-DatePicker-dropdown {
+  min-width: 520px !important;
+  max-width: 620px !important;
+  padding: 8px !important;
+  box-sizing: border-box !important;
+}
+
+/* Make sure internal DayPicker fills the dropdown area */
+.fc-datepicker-popup--spacious .mantine-DayPicker,
+.fc-datepicker-popup--spacious .mantine-DayPicker-month {
+  width: 100% !important;
+  display: grid !important;
+  grid-template-columns: repeat(7, 1fr) !important;
+}
+
+/* Strongly enforce selected/disabled visuals (override broad transparent rules) */
+.mantine-DatePicker-day[data-selected],
+.mantine-DayPicker-day[data-selected],
+.fc-datepicker-day[data-selected] {
+  background-color: var(--accent-color) !important;
+  color: #fff !important;
+  border-radius: 50% !important;
+}
+
+.mantine-DatePicker-day[data-disabled],
+.mantine-DayPicker-day[data-disabled],
+.fc-datepicker-day[data-disabled],
+.mantine-DatePicker-day[aria-disabled="true"] {
+  opacity: 0.35 !important;
+  color: #777 !important;
+  pointer-events: none !important;
+  background-color: transparent !important;
+}
+
+/* Ensure hover highlighting works */
+.mantine-DatePicker-day:not([data-disabled]):hover,
+.mantine-DayPicker-day:not([data-disabled]):hover,
+.fc-datepicker-day:not([data-disabled]):hover {
+  background-color: rgba(128,163,21,0.18) !important;
+  color: var(--primary-text-color) !important;
+}
+
+/* Relax blanket transparent background applied earlier so selected styles are visible */
+.mantine-DatePicker-dropdown * {
+  color: inherit !important;
+}
+
