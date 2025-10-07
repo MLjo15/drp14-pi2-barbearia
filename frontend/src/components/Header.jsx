@@ -20,11 +20,9 @@ function Header({ onAgendamentoClick, onCadastroClick }) {
         <nav>
           <ul>
             <li><a href="#sobre" onClick={(e) => handleScroll(e, 'sobre')}>Sobre</a></li>
-            {/* O link de agendamento agora abre o modal */}
-            <li><a href="#" onClick={(e) => { e.preventDefault(); onAgendamentoClick(); }}>Agendamento</a></li>
+            <li><a href="#servicos" onClick={(e) => handleScroll(e, 'servicos')}>Agendamento</a></li>
             <li><a href="#galeria" onClick={(e) => handleScroll(e, 'galeria')}>Galeria</a></li>
-            {/* O link de cadastro agora abre o modal */}
-            <li><a href="#" onClick={(e) => { e.preventDefault(); onCadastroClick(); }}>Cadastre-se</a></li>
+            <li><a href="#contato" onClick={(e) => handleScroll(e, 'contato')}>Cadastre-se</a></li>
           </ul>
         </nav>
       </div>

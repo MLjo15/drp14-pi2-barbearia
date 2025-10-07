@@ -35,6 +35,11 @@ function App() {
     setModalContent(null);
   };
 
+  const handleGoogleLogin = () => {
+    // open cadastro modal so user can register and then connect Google from the success screen
+    openModal('cadastro');
+  };
+
   const autoplay = useRef(Autoplay({ delay: 2000 }));
   const galleryImages = [
     galeria04,
@@ -85,10 +90,13 @@ function App() {
           id="galeria"
           title="Galeria"
           content="Confira nossos trabalhos incríveis! Navegue por nossa galeria e inspire-se com os cortes e estilos que criamos para nossos clientes. Qualidade e satisfação garantidas em cada detalhe."
-          mediaComponent={
+        />
+        {/* O Carrossel é renderizado separadamente para não interferir no layout das outras seções */}
+        <div className="container">
             <Carousel
+              withIndicators
               height={400}
-              slideSize={{ base: '100%', sm: '100%', md: '100%' }}
+              slideSize={{ base: '100%', sm: '50%', md: '33.333333%' }}
               slideGap={{ base: 0, sm: 'md' }}
               loop
               align="start"
@@ -96,29 +104,35 @@ function App() {
               onMouseEnter={autoplay.current.stop}
               onMouseLeave={autoplay.current.reset}
               className="gallery-carousel"
-              withControls={false}
-              withIndicators={false}
             >
               {slides}
             </Carousel>
-          }
-        />
+        </div>
 
         <Section
           id="contato"
           title="Cadastre sua Barbearia"
           content="Venha fazer parte do nosso time!"
           imageSrc={contatoImage}
-          reverseOrder={true}
         >
-          <Button
-            variant="filled"
-            color="green"
-            size="lg"
-            onClick={() => openModal('cadastro')}
-          >
-            Cadastre-se
-          </Button>
+          <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
+            <Button
+              variant="filled"
+              color="green"
+              size="lg"
+              onClick={() => openModal('cadastro')}
+            >
+              Cadastre-se
+            </Button>
+            <Button
+              variant="outline"
+              color="gray"
+              size="lg"
+              onClick={handleGoogleLogin}
+            >
+              Conectar com Google
+            </Button>
+          </div>
         </Section>
       </main>
 

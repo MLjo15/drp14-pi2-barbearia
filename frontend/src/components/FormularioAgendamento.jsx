@@ -37,7 +37,22 @@ export default function FormularioAgendamento({ isOpen, onClose }) {
      ----------------------- */
 
   // Atualiza o formData
-  const handleChange = (field, value) => setFormData(prev => ({ ...prev, [field]: value }));
+  const handleChange = (field, value) => {
+    if (field === 'telefone') {
+      // Permite apenas números e formata o telefone
+      const digitsOnly = value.replace(/\D/g, '');
+      let formatted = digitsOnly;
+      if (digitsOnly.length > 2) {
+        formatted = `(${digitsOnly.substring(0, 2)}) ${digitsOnly.substring(2, 7)}`;
+      }
+      if (digitsOnly.length > 7) {
+        formatted = `(${digitsOnly.substring(0, 2)}) ${digitsOnly.substring(2, 7)}-${digitsOnly.substring(7, 11)}`;
+      }
+      setFormData(prev => ({ ...prev, [field]: formatted }));
+    } else {
+      setFormData(prev => ({ ...prev, [field]: value }));
+    }
+  };
 
   // Converte qualquer input (Date | Dayjs | string ISO) para um Date local com hora = 00:00 (meia-noite local)
   // Isso evita deslocamento por fuso horário que causava "dia anterior" ao renderizar.
@@ -172,12 +187,37 @@ export default function FormularioAgendamento({ isOpen, onClose }) {
   }, [formData.barbearia_id, formData.data, workingDays]);
 
   /* -----------------------
+     EFEITO: LIDAR COM SUCESSO DO AGENDAMENTO
+     - Mostra a notificação de sucesso.
+     - Após 3 segundos, fecha o modal e limpa o formulário.
+     ----------------------- */
+  useEffect(() => {
+    if (success) {
+      const timer = setTimeout(() => {
+        setSuccess(false); // Limpa a notificação
+        setFormData({ barbearia_id: '', data: '', hora: '', servico: '', nome: '', email: '', telefone: '' }); // Limpa o formulário
+        if (onClose) onClose(); // Fecha o modal
+      }, 3000); // 3 segundos
+
+      return () => clearTimeout(timer); // Limpa o timer se o componente for desmontado
+    }
+  }, [success, onClose]);
+
+  /* -----------------------
      SUBMISSÃO DO FORMULÁRIO
      (mantido como antes; não altera o problema do DatePicker)
      ----------------------- */
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsLoading(true); setError(null);
+
+    // Validação de Email simples com Regex
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(formData.email)) {
+      setError("Por favor, insira um endereço de e-mail válido.");
+      setIsLoading(false);
+      return;
+    }
     try {
       const selectedSlot = slots.find(s => String(s.value) === String(formData.hora));
       let dataHoraInicio, dataHoraFim;
@@ -211,8 +251,6 @@ export default function FormularioAgendamento({ isOpen, onClose }) {
       const j = await res.json(); if (!res.ok) throw new Error(j.error || 'Erro servidor');
 
       setSuccess(true);
-      setFormData({ barbearia_id: '', data: '', hora: '', servico: '', nome: '', email: '', telefone: '' });
-      if (onClose) onClose();
     } catch (err) {
       console.error(err);
       setError(err.message || String(err));
@@ -339,9 +377,20 @@ export default function FormularioAgendamento({ isOpen, onClose }) {
             withCheckIcon={false}
           />
 
-          <TextInput label="Nome Completo" value={formData.nome} onChange={(e) => handleChange('nome', e.target.value)} required />
-          <TextInput label="Email" type="email" value={formData.email} onChange={(e) => handleChange('email', e.target.value)} required />
-          <TextInput label="Telefone" type="tel" value={formData.telefone} onChange={(e) => handleChange('telefone', e.target.value)} required />
+          <TextInput 
+            label="Nome Completo" 
+            value={formData.nome} 
+            onChange={(e) => handleChange('nome', e.target.value)} 
+            required 
+          />
+          <TextInput 
+            label="Email" 
+            type="email" 
+            value={formData.email} 
+            onChange={(e) => handleChange('email', e.target.value)} 
+            required 
+          />
+          <TextInput label="Telefone" type="tel" placeholder="(xx) xxxxx-xxxx" value={formData.telefone} onChange={(e) => handleChange('telefone', e.target.value)} required maxLength={15} />
 
           <Button variant="filled" color="green" size="lg" type="submit" style={{ marginTop: '20px' }} fullWidth disabled={isLoading}>
             {isLoading ? <Loader size="sm" color="white" /> : 'Confirmar Agendamento'}

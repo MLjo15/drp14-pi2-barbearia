@@ -23,15 +23,34 @@ const FormularioCadastro = ({ isOpen, onClose }) => {
   const [success, setSuccess] = useState(false);
   const [newBarbeariaId, setNewBarbeariaId] = useState(null);
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+  const handleChange = (field, value) => {
+    if (field === 'telefone') {
+      // Permite apenas números e formata o telefone
+      const digitsOnly = String(value).replace(/\D/g, '');
+      let formatted = digitsOnly;
+      if (digitsOnly.length > 2) {
+        formatted = `(${digitsOnly.substring(0, 2)}) ${digitsOnly.substring(2, 7)}`;
+      }
+      if (digitsOnly.length > 7) {
+        formatted = `(${digitsOnly.substring(0, 2)}) ${digitsOnly.substring(2, 7)}-${digitsOnly.substring(7, 11)}`;
+      }
+      setFormData(prev => ({ ...prev, [field]: formatted }));
+    } else {
+      setFormData(prev => ({ ...prev, [field]: value }));
+    }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsLoading(true);
     setError(null);
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(formData.email)) {
+      setError("Por favor, insira um endereço de e-mail válido.");
+      setIsLoading(false);
+      return;
+    }
 
     try {
       // build horarios from selected days using default times
@@ -115,11 +134,11 @@ const FormularioCadastro = ({ isOpen, onClose }) => {
         {error && <Notification color="red" onClose={() => setError(null)}>{error}</Notification>}
 
         <form onSubmit={handleSubmit}>
-          <TextInput label="Nome da Barbearia" name="nome" value={formData.nome} onChange={handleChange} required />
-          <TextInput label="Nome do Proprietário" name="proprietario" value={formData.proprietario} onChange={handleChange} required />
-          <TextInput label="Telefone" type="tel" name="telefone" value={formData.telefone} onChange={handleChange} required />
-          <TextInput label="Email" type="email" name="email" value={formData.email} onChange={handleChange} required />
-          <TextInput label="Endereço Completo" name="endereco" value={formData.endereco} onChange={handleChange} required />
+          <TextInput label="Nome da Barbearia" name="nome" value={formData.nome} onChange={(e) => handleChange('nome', e.target.value)} required />
+          <TextInput label="Nome do Proprietário" name="proprietario" value={formData.proprietario} onChange={(e) => handleChange('proprietario', e.target.value)} required />
+          <TextInput label="Telefone" type="tel" name="telefone" placeholder="(xx) xxxxx-xxxx" value={formData.telefone} onChange={(e) => handleChange('telefone', e.target.value)} required maxLength={15} />
+          <TextInput label="Email" type="email" name="email" value={formData.email} onChange={(e) => handleChange('email', e.target.value)} required />
+          <TextInput label="Endereço Completo" name="endereco" value={formData.endereco} onChange={(e) => handleChange('endereco', e.target.value)} required />
 
           <Select label="Fuso horário" data={[{ value: 'America/Sao_Paulo', label: 'São Paulo' }, { value: 'America/Manaus', label: 'Manaus' }, { value: 'America/New_York', label: 'Nova York' }, { value: 'Europe/Lisbon', label: 'Lisboa' }]} value={formData.fuso_horario} onChange={(val) => setFormData(prev => ({ ...prev, fuso_horario: val }))} />
 

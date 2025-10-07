@@ -1,15 +1,15 @@
 // src/components/Section.jsx
 
-const Section = ({ id, title, content, imageSrc, reverseOrder, children }) => {
+const Section = ({ id, title, content, imageSrc, mediaComponent, reverseOrder, children }) => {
   const sectionClasses = `section ${reverseOrder ? 'reverse-order' : ''}`;
 
   return (
     <section id={id} className={sectionClasses}>
       <div className="container section-content">
-        {/* Renderiza a imagem se imageSrc for fornecido */}
-        {imageSrc && (
+        {/* Renderiza o componente de mídia ou a imagem, se fornecidos */}
+        {(imageSrc || mediaComponent) && (
           <div className="section-image">
-            <img src={imageSrc} alt={title} />
+            {mediaComponent ? mediaComponent : <img src={imageSrc} alt={title} />}
           </div>
         )}
 
