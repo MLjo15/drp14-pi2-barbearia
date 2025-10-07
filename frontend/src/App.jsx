@@ -23,18 +23,24 @@ import galeria09 from './assets/09.png';
 import galeria10 from './assets/10.png';
 
 function App() {
+  // Estado para controlar se algum modal está aberto.
   const [isModalOpen, setIsModalOpen] = useState(false);
+  // Estado para determinar qual modal ('agendamento' or 'cadastro') deve ser renderizado.
   const [modalContent, setModalContent] = useState(null);
 
+  // Função para abrir um modal específico.
   const openModal = (content) => {
     setModalContent(content);
     setIsModalOpen(true);
   };
+
+  // Função para fechar o modal atualmente aberto.
   const closeModal = () => {
     setIsModalOpen(false);
     setModalContent(null);
   };
 
+  // Configuração do plugin de autoplay para o carrossel.
   const autoplay = useRef(Autoplay({ delay: 2000 }));
   const galleryImages = [
     galeria04,
@@ -46,6 +52,7 @@ function App() {
     galeria10,
   ];
 
+  // Mapeia as imagens para os slides do carrossel.
   const slides = galleryImages.map((url) => (
     <Carousel.Slide key={url}>
       <Image src={url} alt="Foto da galeria da barbearia" className="gallery-carousel-image" />
@@ -54,6 +61,7 @@ function App() {
 
   return (
     <>
+      {/* O Header contém os botões que chamam `openModal` para abrir os formulários. */}
       <Header onAgendamentoClick={() => openModal('agendamento')} onCadastroClick={() => openModal('cadastro')} />
       <main>
         <Section
@@ -124,6 +132,7 @@ function App() {
 
       <Footer />
 
+      {/* Renderização condicional dos modais com base no estado `modalContent`. */}
       {modalContent === 'agendamento' && (
         <FormularioAgendamento isOpen={isModalOpen} onClose={closeModal} />
       )}

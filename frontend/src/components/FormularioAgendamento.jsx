@@ -7,36 +7,49 @@ import 'dayjs/locale/pt-br';
 
 // Componente do formulário de agendamento
 export default function FormularioAgendamento({ isOpen, onClose }) {
-  /* -----------------------
-     STATES / ESTADOS
-     ----------------------- */
+  // ----------------------------------------------------------------
+  // ESTADOS (STATES)
+  // Gerencia todos os dados do formulário, estados de carregamento,
+  // erros e dados buscados da API.
+  // ----------------------------------------------------------------
+
+  // Armazena os dados preenchidos pelo usuário no formulário.
   const [formData, setFormData] = useState({
     barbearia_id: '',
-    data: '', // YYYY-MM-DD (string)
+    data: '', // Formato: YYYY-MM-DD (string)
     hora: '',
     servico: '',
     nome: '',
     email: '',
     telefone: ''
   });
-
-  const [barbearias, setBarbearias] = useState([]);      // lista de barbearias
-  const [slots, setSlots] = useState([]);                // horários disponíveis (select)
-  const [workingDays, setWorkingDays] = useState(new Set()); // dias em que a barbearia funciona (0..6)
-  const [selectedDateObj, setSelectedDateObj] = useState(null); // Date nativo (NORMALIZADO para meia-noite local)
+  // Armazena a lista de barbearias buscada da API.
+  const [barbearias, setBarbearias] = useState([]);
+  // Armazena os horários (slots) disponíveis para a data selecionada.
+  const [slots, setSlots] = useState([]);
+  // Armazena os dias da semana em que a barbearia funciona (0=Domingo, 1=Segunda, etc.).
+  const [workingDays, setWorkingDays] = useState(new Set());
+  // Armazena o objeto Date nativo da data selecionada, normalizado para meia-noite local.
+  const [selectedDateObj, setSelectedDateObj] = useState(null);
+  // Controla o loader do seletor de horários.
   const [isSlotsLoading, setIsSlotsLoading] = useState(false);
+  // Controla o estado de carregamento do botão de submissão do formulário.
   const [isLoading, setIsLoading] = useState(false);
+  // Controla o loader inicial de carregamento das barbearias.
+  const [isBarbeariasLoading, setIsBarbeariasLoading] = useState(true);
+  // Armazena mensagens de erro para exibição.
   const [error, setError] = useState(null);
+  // Controla a exibição da notificação de sucesso.
   const [success, setSuccess] = useState(false);
-  const [popoverOpened, setPopoverOpened] = useState(false); // controla abrir/fechar do calendário
+  // Controla a visibilidade do popover do calendário (DatePicker).
+  const [popoverOpened, setPopoverOpened] = useState(false);
 
   dayjs.locale('pt-br');
 
-  /* -----------------------
-     FUNÇÕES AUXILIARES
-     ----------------------- */
+  // --- FUNÇÕES AUXILIARES ---
 
-  // Atualiza o formData
+  // Atualiza o estado `formData` de forma genérica para todos os campos.
+  // Inclui uma formatação especial para o campo de telefone.
   const handleChange = (field, value) => {
     if (field === 'telefone') {
       // Permite apenas números e formata o telefone
@@ -54,8 +67,8 @@ export default function FormularioAgendamento({ isOpen, onClose }) {
     }
   };
 
-  // Converte qualquer input (Date | Dayjs | string ISO) para um Date local com hora = 00:00 (meia-noite local)
-  // Isso evita deslocamento por fuso horário que causava "dia anterior" ao renderizar.
+  // Normaliza qualquer formato de data (Date, Dayjs, string ISO) para um objeto Date local,
+  // sempre à meia-noite. Isso evita problemas de fuso horário que podem alterar o dia.
   const toLocalMidnight = (input) => {
     if (!input) return null;
 
@@ -96,27 +109,32 @@ export default function FormularioAgendamento({ isOpen, onClose }) {
     }
   };
 
-  /* -----------------------
-     EFEITOS: CARREGAR BARBEARIAS (montagem)
-     ----------------------- */
+  // ----------------------------------------------------------------
+  // EFEITOS (EFFECTS)
+  // ----------------------------------------------------------------
+
+  // Efeito para buscar a lista de barbearias quando o componente é montado.
   useEffect(() => {
+    setIsBarbeariasLoading(true);
     (async () => {
       try {
         const res = await fetch('/api/barbearias');
         const j = await res.json();
         if (j.success) setBarbearias(j.barbearias || []);
       } catch (e) {
+        setError("Não foi possível carregar as barbearias. Tente novamente mais tarde.");
         console.error(e);
+      } finally {
+        setIsBarbeariasLoading(false);
       }
     })();
   }, []);
 
+  // Memoiza a formatação dos dados das barbearias para o componente Select.
   const barbeariasData = useMemo(() => barbearias.map(b => ({ value: b.id, label: b.nome })), [barbearias]);
 
-  /* -----------------------
-     EFEITO: QUANDO TROCA DE BARBEARIA, CARREGAR HORÁRIOS DE FUNCIONAMENTO
-     -> popula workingDays (conjunto com números 0..6)
-     ----------------------- */
+  // Efeito para buscar os dias de funcionamento da barbearia selecionada.
+  // É acionado sempre que `formData.barbearia_id` muda.
   useEffect(() => {
     const id = formData.barbearia_id;
     if (!id) return;
@@ -139,11 +157,9 @@ export default function FormularioAgendamento({ isOpen, onClose }) {
     })();
   }, [formData.barbearia_id]);
 
-  /* -----------------------
-     EFEITO: CARREGAR HORÁRIOS DISPONÍVEIS PARA A DATA SELECIONADA
-     - Usa formData.data (YYYY-MM-DD) para chamar a API
-     - Antes de chamar, valida se o dia faz parte de workingDays (se houver)
-     ----------------------- */
+  // Efeito para buscar os horários (slots) disponíveis para uma data específica.
+  // É acionado quando a barbearia ou a data no formulário mudam.
+  // Valida se o dia selecionado é um dia de funcionamento antes de fazer a requisição.
   useEffect(() => {
     const id = formData.barbearia_id;
     const dateStr = formData.data;
@@ -186,11 +202,9 @@ export default function FormularioAgendamento({ isOpen, onClose }) {
     })();
   }, [formData.barbearia_id, formData.data, workingDays]);
 
-  /* -----------------------
-     EFEITO: LIDAR COM SUCESSO DO AGENDAMENTO
-     - Mostra a notificação de sucesso.
-     - Após 3 segundos, fecha o modal e limpa o formulário.
-     ----------------------- */
+  // Efeito para lidar com a submissão bem-sucedida.
+  // Mostra a notificação de sucesso e, após 3 segundos, fecha o modal
+  // e reseta o estado do formulário.
   useEffect(() => {
     if (success) {
       const timer = setTimeout(() => {
@@ -203,10 +217,9 @@ export default function FormularioAgendamento({ isOpen, onClose }) {
     }
   }, [success, onClose]);
 
-  /* -----------------------
-     SUBMISSÃO DO FORMULÁRIO
-     (mantido como antes; não altera o problema do DatePicker)
-     ----------------------- */
+  // Função para lidar com a submissão do formulário.
+  // Valida o e-mail, monta o payload e envia para a API de agendamento.
+  // Trata os casos de sucesso e erro.
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsLoading(true); setError(null);
@@ -259,143 +272,132 @@ export default function FormularioAgendamento({ isOpen, onClose }) {
     }
   };
 
-  /* -----------------------
-     RENDER (JSX)
-     - DatePicker com:
-       * firstDayOfWeek=1 (segunda)
-       * weekdayFormat="ddd" (vai gerar 'seg', 'ter'... com locale pt-br -> vamos uppercase via CSS)
-       * renderDay: cria o conteúdo interno com classes que o CSS estilizará
-     ----------------------- */
+  // ----------------------------------------------------------------
+  // RENDERIZAÇÃO DO COMPONENTE (JSX)
+  // ----------------------------------------------------------------
+
   return (
     <Modal isOpen={isOpen} onClose={onClose}>
       <div className="form-container">
         <h2>Agende seu Horário</h2>
 
-        {error && <Notification color="red" onClose={() => setError(null)}>{error}</Notification>}
-        {success && <Notification color="green" onClose={() => setSuccess(false)}>Agendamento realizado com sucesso!</Notification>}
-
-        <form onSubmit={handleSubmit}>
-          <Select
-            label="Escolha a Barbearia"
-            placeholder="Selecione a barbearia"
-            data={barbeariasData}
-            value={formData.barbearia_id}
-            onChange={(v) => handleChange('barbearia_id', v)}
-            required
-            withCheckIcon={false}
-          />
-
-          <div style={{ marginBottom: 10 }}>
-            <Popover
-              width={520}
-              position="bottom"
-              withArrow
-              withinPortal
-              offset={8}
-              opened={popoverOpened}
-              onChange={setPopoverOpened}
-              closeOnClickOutside
-              closeOnEscape
-            >
-              <Popover.Target>
-                <div>
-                  <TextInput
-                    label="Data"
-                    placeholder="Selecione a data"
-                    value={selectedDateObj ? dayjs(selectedDateObj).format('DD/MM/YYYY') : ''}
-                    readOnly
-                    className="fc-datepicker-input"
-                    onClick={() => setPopoverOpened(o => !o)}
-                    required
-                  />
-                </div>
-              </Popover.Target>
-
-              <Popover.Dropdown className="fc-datepicker-dropdown" style={{ minWidth: 520 }}>
-                <DatePicker
-                  locale="pt-br"
-                  firstDayOfWeek={1}
-                  weekdayFormat="ddd"
-                  value={selectedDateObj}
-                  onChange={(value) => {
-                    // converte para meia-noite local e usa esse Date como value
-                    const local = toLocalMidnight(value);
-                    if (!local) return;
-
-                    setSelectedDateObj(local);
-                    // salva string YYYY-MM-DD (sem horário) no form
-                    handleChange('data', dayjs(local).format('YYYY-MM-DD'));
-                    setPopoverOpened(false);
-                  }}
-                  size="sm"
-                  hideOutsideDates
-                  // excludeDate executa com cada célula (d pode ser Date ou Dayjs)
-                  excludeDate={(d) => {
-                    const n = toLocalMidnight(d);
-                    if (!n) return false;
-                    // se workingDays vazio -> permitir todos
-                    if (!workingDays || workingDays.size === 0) return false;
-                    return !workingDays.has(n.getDay()); // true => excluído (disabled)
-                  }}
-                  // Renderiza o conteúdo do dia (retornamos uma div com classes para CSS)
-                  renderDay={(d) => {
-                    const n = toLocalMidnight(d);
-                    if (!n) return null;
-
-                    // disponibilidade
-                    const isAvailable = workingDays.size === 0 || workingDays.has(n.getDay());
-                    const isSelected = selectedDateObj && dayjs(selectedDateObj).isSame(dayjs(n), 'day');
-
-                    return (
-                      // A classe interna será estilizada pelo CSS que eu forneci abaixo.
-                      <div className={`fc-day ${isAvailable ? 'available' : 'disabled'} ${isSelected ? 'selected' : ''}`}>
-                        {n.getDate()}
-                      </div>
-                    );
-                  }}
-                />
-              </Popover.Dropdown>
-            </Popover>
+        {isBarbeariasLoading ? (
+          <div style={{ display: 'flex', justifyContent: 'center', padding: '20px' }}>
+            <Loader />
           </div>
+        ) : barbearias.length === 0 ? (
+          <Notification color="yellow" title="Nenhuma barbearia disponível" disallowClose>
+            No momento, não há barbearias cadastradas para agendamento. Por favor, volte mais tarde.
+          </Notification>
+        ) : (
+          <>
+            {error && <Notification color="red" onClose={() => setError(null)}>{error}</Notification>}
+            {success && <Notification color="green" onClose={() => setSuccess(false)}>Agendamento realizado com sucesso!</Notification>}
 
-          <Select
-            label="Horário Disponível"
-            placeholder={isSlotsLoading ? 'Carregando...' : 'Selecione um horário'}
-            data={slots}
-            value={formData.hora}
-            onChange={(v) => handleChange('hora', v)}
-            required
-            withCheckIcon={false}
-          />
+            <form onSubmit={handleSubmit}>
+              <Select
+                label="Escolha a Barbearia"
+                placeholder="Selecione a barbearia"
+                data={barbeariasData}
+                value={formData.barbearia_id}
+                onChange={(v) => handleChange('barbearia_id', v)}
+                required
+                withCheckIcon={false}
+              />
 
-          <Select
-            label="Serviço"
-            data={['Corte de Cabelo', 'Barba', 'Corte e Barba', 'Outro']}
-            value={formData.servico}
-            onChange={(v) => handleChange('servico', v)}
-            required
-            withCheckIcon={false}
-          />
+              <div style={{ marginBottom: 10 }}>
+                <Popover
+                  width={520}
+                  position="bottom"
+                  withArrow
+                  withinPortal
+                  offset={8}
+                  opened={popoverOpened}
+                  onChange={setPopoverOpened}
+                  closeOnClickOutside
+                  closeOnEscape
+                >
+                  <Popover.Target>
+                    <div>
+                      <TextInput
+                        label="Data"
+                        placeholder="Selecione a data"
+                        value={selectedDateObj ? dayjs(selectedDateObj).format('DD/MM/YYYY') : ''}
+                        readOnly
+                        className="fc-datepicker-input"
+                        onClick={() => setPopoverOpened(o => !o)}
+                        required
+                      />
+                    </div>
+                  </Popover.Target>
 
-          <TextInput 
-            label="Nome Completo" 
-            value={formData.nome} 
-            onChange={(e) => handleChange('nome', e.target.value)} 
-            required 
-          />
-          <TextInput 
-            label="Email" 
-            type="email" 
-            value={formData.email} 
-            onChange={(e) => handleChange('email', e.target.value)} 
-            required 
-          />
-          <TextInput label="Telefone" type="tel" placeholder="(xx) xxxxx-xxxx" value={formData.telefone} onChange={(e) => handleChange('telefone', e.target.value)} required maxLength={15} />
+                  <Popover.Dropdown className="fc-datepicker-dropdown" style={{ minWidth: 520 }}>
+                    <DatePicker
+                      locale="pt-br"
+                      firstDayOfWeek={1}
+                      weekdayFormat="ddd"
+                      value={selectedDateObj}
+                      onChange={(value) => {
+                        const local = toLocalMidnight(value);
+                        if (!local) return;
+                        setSelectedDateObj(local);
+                        handleChange('data', dayjs(local).format('YYYY-MM-DD'));
+                        setPopoverOpened(false);
+                      }}
+                      size="sm"
+                      hideOutsideDates
+                      minDate={new Date()}
+                      excludeDate={(d) => {
+                        const n = toLocalMidnight(d);
+                        if (!n) return false;
+                        if (!workingDays || workingDays.size === 0) return false;
+                        return !workingDays.has(n.getDay());
+                      }}
+                      renderDay={(d) => {
+                        const n = toLocalMidnight(d);
+                        if (!n) return null;
+                        const isAvailable = workingDays.size === 0 || workingDays.has(n.getDay());
+                        const isSelected = selectedDateObj && dayjs(selectedDateObj).isSame(dayjs(n), 'day');
+                        return (
+                          <div className={`fc-day ${isAvailable ? 'available' : 'disabled'} ${isSelected ? 'selected' : ''}`}>
+                            {n.getDate()}
+                          </div>
+                        );
+                      }}
+                    />
+                  </Popover.Dropdown>
+                </Popover>
+              </div>
 
-          <Button variant="filled" color="green" size="lg" type="submit" style={{ marginTop: '20px' }} fullWidth disabled={isLoading}>
-            {isLoading ? <Loader size="sm" color="white" /> : 'Confirmar Agendamento'}
-          </Button>
-        </form>
+              <Select
+                label="Horário Disponível"
+                placeholder={isSlotsLoading ? 'Carregando...' : 'Selecione um horário'}
+                data={slots}
+                value={formData.hora}
+                onChange={(v) => handleChange('hora', v)}
+                required
+                withCheckIcon={false}
+              />
+
+              <Select
+                label="Serviço"
+                data={['Corte de Cabelo', 'Barba', 'Corte e Barba', 'Outro']}
+                value={formData.servico}
+                onChange={(v) => handleChange('servico', v)}
+                required
+                withCheckIcon={false}
+              />
+
+              <TextInput label="Nome Completo" value={formData.nome} onChange={(e) => handleChange('nome', e.target.value)} required />
+              <TextInput label="Email" type="email" value={formData.email} onChange={(e) => handleChange('email', e.target.value)} required />
+              <TextInput label="Telefone" type="tel" placeholder="(xx) xxxxx-xxxx" value={formData.telefone} onChange={(e) => handleChange('telefone', e.target.value)} required maxLength={15} />
+
+              <Button variant="filled" color="green" size="lg" type="submit" style={{ marginTop: '20px' }} fullWidth disabled={isLoading}>
+                {isLoading ? <Loader size="sm" color="white" /> : 'Confirmar Agendamento'}
+              </Button>
+            </form>
+          </>
+        )}
       </div>
     </Modal>
   );

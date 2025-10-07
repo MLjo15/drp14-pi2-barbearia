@@ -95,7 +95,7 @@ body {
 .site-header nav a {
   text-transform: uppercase;
   font-weight: bold;
-  transition: color 0.3s ease;
+  transition: color 0.6s ease;
 }
 
 .site-header nav a:hover {
@@ -516,6 +516,8 @@ body {
 }
 
 /* Força abreviações em português para os dias da semana no DatePicker do Mantine. */
+/* A biblioteca renderiza os dias por extenso, então usamos um truque com pseudo-elementos
+   para substituir o texto original (escondido com `color: transparent`). */
 .mantine-DayPicker-weekday {
   color: transparent !important; /* hide original text */
   position: relative !important;
@@ -911,12 +913,14 @@ body {
 }
 
 /* Dias desabilitados (ex: fora dos `workingDays`) devem parecer inativos e não interativos. */
+/* Também se aplica a dias passados, graças à propriedade `minDate`. */
 .mantine-DatePicker-day[data-disabled],
 .mantine-DatePicker-day[aria-disabled="true"] {
   opacity: 0.35 !important;
   color: #777 !important;
   cursor: not-allowed !important;
   background-color: transparent !important;
+  pointer-events: none; /* Garante que não haja interação. */
 }
 
 /* Destaque para dias disponíveis ao passar o mouse (hover). */
@@ -1255,7 +1259,9 @@ body {
   background-color: rgba(128,163,21,0.18) !important;
   color: var(--primary-text-color) !important;
 }
-/* Relaxa a regra de fundo transparente para que os estilos de seleção (ex: dia selecionado) sejam visíveis. */
+
+/* Relaxa a regra de fundo transparente para que os estilos de seleção (ex: dia selecionado) e hover sejam visíveis.
+   A regra anterior `background-color: transparent !important` em `*` era muito agressiva. */
 .mantine-DatePicker-dropdown * {
   color: inherit !important;
 }
