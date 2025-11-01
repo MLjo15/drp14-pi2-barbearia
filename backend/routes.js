@@ -4,8 +4,12 @@ import { supabase } from "./supabaseClient.js";
 
 const router = Router();
 
+// Loga a variável de ambiente GOOGLE_REDIRECT_URI no console do Render (para debug)
+console.log('DEBUG: GOOGLE_REDIRECT_URI sendo usado:', process.env.GOOGLE_REDIRECT_URI);
+
 // Cria um cliente OAuth2 fora das rotas para ser reutilizado
 // Ele depende das variáveis de ambiente GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET e GOOGLE_REDIRECT_URI
+// ESTE É O ENDEREÇO QUE PRECISA BATER EXATAMENTE COM O CONFIGURADO NO GOOGLE CLOUD CONSOLE
 const oauth2Client = new google.auth.OAuth2(
   process.env.GOOGLE_CLIENT_ID,
   process.env.GOOGLE_CLIENT_SECRET,
@@ -54,28 +58,21 @@ router.get("/auth/google/callback", async (req, res) => {
 
   try {
     // Troca o código de autorização por tokens de acesso e refresh
+    // Esta chamada usa o GOOGLE_REDIRECT_URI configurado no objeto oauth2Client
     const { tokens } = await oauth2Client.getToken(code);
-
-    // O refresh_token é retornado apenas na primeira vez. 
-    // Usamos o operador spread para garantir que, se for nulo, ele não sobrescreva um valor existente no Supabase.
-    // Embora o Supabase Upsert já gerencie isso, ser explícito é mais seguro.
-    const tokenData = {
-        shop_id,
-        access_token: tokens.access_token,
-        scope: tokens.scope,
-        token_type: tokens.token_type,
-        expiry_date: tokens.expiry_date,
-        updated_at: new Date()
-    };
-
-    if (tokens.refresh_token) {
-        tokenData.refresh_token = tokens.refresh_token;
-    }
 
     // Insere ou atualiza (UPSERT) na tabela shop_google_tokens
     const { error } = await supabase
       .from("shop_google_tokens")
-      .upsert(tokenData, { onConflict: 'shop_id' }); // Garante que atualiza se o shop_id já existir
+      .upsert({
+        shop_id,
+        access_token: tokens.access_token,
+        refresh_token: tokens.refresh_token, // O refresh token é vital para renovar o acesso
+        scope: tokens.scope,
+        token_type: tokens.token_type,
+        expiry_date: tokens.expiry_date,
+        updated_at: new Date()
+      }, { onConflict: 'shop_id' }); // Garante que atualiza se o shop_id já existir
 
     if (error) throw error;
 
