@@ -12,7 +12,7 @@ function Footer() {
           
           <div className="footer-section">
             <h4>Contato</h4>
-            <p>Endereço: Rua Xispetecar, 157<br />São paulo - SP</p>
+            <p>Endereço: Av. Faria Lima, 99999<br />São paulo - SP</p>
             <p>Telefone: (11) 98765-4321</p>
             <p>Email: contato@cortecertobarbers.com</p>
           </div>

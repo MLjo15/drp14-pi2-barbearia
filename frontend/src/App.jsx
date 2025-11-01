@@ -67,7 +67,7 @@ function App() {
         <Section
           id="sobre"
           title="Sobre Nós"
-          content="Nossa história, nossa paixão e o compromisso com a arte da barbearia. Fundada em 2023, a Barbearia Corte Certo traz a tradição da barbearia clássica com um toque de modernidade e estilo."
+          content="Nossa história, nossa paixão e o compromisso com a arte da barbearia tradicional com um toque de tecnologia. Fundada em 2025, a Barbearia Corte Certo traz o conceito de acessibilidade digital, conectando clientes às melhores barbearias."
           imageSrc={sobreImage}
         />
 
@@ -92,7 +92,7 @@ function App() {
         <Section
           id="galeria"
           title="Galeria"
-          content="Confira nossos trabalhos incríveis! Navegue por nossa galeria e inspire-se com os cortes e estilos que criamos para nossos clientes. Qualidade e satisfação garantidas em cada detalhe."
+          content="Confira esses trabalhos incríveis! Navegue por nossa galeria e inspire-se com os cortes e estilos. Qualidade e satisfação garantidas em cada detalhe."
           mediaComponent={
             <Carousel
               height={400}

@@ -13,8 +13,8 @@ const GCalAuthButton = ({ barbeariaId }) => {
 
   return (
     <Button 
-      variant="outline" 
-      color="red" 
+      variant="filled" 
+      color="blue" 
       onClick={handleAuthClick} 
       style={{ marginTop: '15px' }}
       fullWidth

@@ -118,9 +118,6 @@ const FormularioCadastro = ({ isOpen, onClose }) => {
             Barbearia cadastrada. Agora, conecte seu Google Calendar.
           </Notification>
           <GCalAuthButton barbeariaId={newBarbeariaId} />
-          <Button variant="subtle" onClick={onClose} style={{ marginTop: '15px' }}>
-            Fechar
-          </Button>
         </div>
       </Modal>
     );
