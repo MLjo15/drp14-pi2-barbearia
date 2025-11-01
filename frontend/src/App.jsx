@@ -1,14 +1,14 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Header from './components/Header.jsx';
 import Section from './components/Section.jsx';
 import Footer from './components/Footer.jsx';
 import FormularioAgendamento from './components/FormularioAgendamento.jsx';
 import FormularioCadastro from './components/FormularioCadastro.jsx'
-import { Button, Image } from '@mantine/core';
+import { Button, Image, MantineProvider, Notification } from '@mantine/core';
+import { IconCheck } from '@tabler/icons-react';
 import '@mantine/carousel/styles.css';
 import { Carousel } from '@mantine/carousel';
 import Autoplay from 'embla-carousel-autoplay';
-import { useRef } from 'react';
 
 // Imagens
 import sobreImage from './assets/02.jpg';
@@ -27,6 +27,27 @@ function App() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   // Estado para determinar qual modal ('agendamento' or 'cadastro') deve ser renderizado.
   const [modalContent, setModalContent] = useState(null);
+  // Estado para controlar a exibição da notificação de sucesso do OAuth.
+  const [showAuthSuccess, setShowAuthSuccess] = useState(false);
+
+  useEffect(() => {
+    // Verifica se a URL contém o parâmetro de sucesso da autenticação do Google.
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('auth_status') === 'success') {
+      setShowAuthSuccess(true);
+
+      // Limpa a URL para que a notificação não reapareça ao recarregar a página.
+      window.history.replaceState({}, document.title, window.location.pathname);
+
+      // Esconde a notificação após 5 segundos.
+      const timer = setTimeout(() => {
+        setShowAuthSuccess(false);
+      }, 5000);
+
+      // Limpa o timer se o componente for desmontado.
+      return () => clearTimeout(timer);
+    }
+  }, []);
 
   // Função para abrir um modal específico.
   const openModal = (content) => {
@@ -60,8 +81,26 @@ function App() {
   )); // Corrigido: Fechado com '));' em vez de '};'
 
   return (
-    <>
-      {/* O Header contém os botões que chamam `openModal` para abrir os formulários. */}
+    <MantineProvider>
+      {/* Container para a notificação de sucesso da conexão com o Google. */}
+      {showAuthSuccess && (
+        <Notification
+          icon={<IconCheck size="1.1rem" />}
+          color="teal"
+          title="Conexão bem-sucedida!"
+          onClose={() => setShowAuthSuccess(false)}
+          style={{
+            position: 'fixed',
+            top: 20,
+            right: 20,
+            zIndex: 10000,
+          }}
+        >
+          Sua conta Google foi conectada com sucesso e está pronta para receber agendamentos.
+        </Notification>
+      )}
+
+      {/* O Header contém os botões que chamam `openModal` para abrir os formulários.  */}
       <Header onAgendamentoClick={() => openModal('agendamento')} onCadastroClick={() => openModal('cadastro')} />
       <main>
         <Section
@@ -139,7 +178,7 @@ function App() {
       {modalContent === 'cadastro' && (
         <FormularioCadastro isOpen={isModalOpen} onClose={closeModal} />
       )}
-    </>
+    </MantineProvider>
   );
 }
 
