@@ -40,35 +40,17 @@ router.get("/auth/google", (req, res) => {
   res.redirect(url);
 });
 
-// 🔹 ROTA 2/2 - Callback do Google OAuth
+// ✅ ROTA 2/2 - Callback do Google OAuth
 router.get("/auth/google/callback", async (req, res) => {
   const { code, state } = req.query;
   const shop_id = state;
-  const expectedUri = process.env.GOOGLE_REDIRECT_URI || "";
-  const FRONTEND_URL =
-    (process.env.FRONTEND_URL ||
-      process.env.VITE_FRONTEND_URL ||
-      "http://localhost:5173").replace(/\/$/, "");
+  const FRONTEND_URL = (process.env.FRONTEND_URL ||
+    process.env.VITE_FRONTEND_URL ||
+    "http://localhost:5173").replace(/\/$/, "");
 
   if (!code || !shop_id) {
     console.error("Erro no callback Google: Código ou ShopID ausente.");
-    return res.send(`
-      <html>
-        <head><meta charset="utf-8"/><title>Erro Autenticação Google</title></head>
-        <script>
-          (function(){
-            const frontend = "${FRONTEND_URL}";
-            if (window.opener) {
-              window.opener.postMessage({ type: "google-auth", success: false, message: "Código ou shop_id ausente" }, frontend);
-              window.close();
-            } else {
-              try { localStorage.setItem('google_auth_result', JSON.stringify({ success: false })); } catch(e) {}
-              window.location.replace(frontend + "/?google=error");
-            }
-          })();
-        </script>
-      </html>
-    `);
+    return res.redirect(`${FRONTEND_URL}/home?status=error`);
   }
 
   try {
@@ -84,52 +66,18 @@ router.get("/auth/google/callback", async (req, res) => {
           scope: tokens.scope,
           token_type: tokens.token_type,
           expiry_date: tokens.expiry_date,
-          updated_at: new Date()
+          updated_at: new Date(),
         },
         { onConflict: "shop_id" }
       );
 
     if (error) throw error;
 
-    // ✅ Sucesso → fecha popup e envia mensagem para o frontend
-    return res.send(`
-      <html>
-        <head><meta charset="utf-8"/><title>Google Auth Sucesso</title></head>
-        <script>
-          (function(){
-            const frontend = "${FRONTEND_URL}";
-            if (window.opener) {
-              window.opener.postMessage({ type: "google-auth", success: true }, frontend);
-              window.close();
-            } else {
-              try { localStorage.setItem('google_auth_result', JSON.stringify({ success: true })); } catch(e) {}
-              window.location.replace(frontend + "/?google=success");
-            }
-          })();
-        </script>
-      </html>
-    `);
+    // ✅ Redireciona para o frontend com status de sucesso
+    return res.redirect(`${FRONTEND_URL}/home?status=success`);
   } catch (err) {
     console.error("Erro no callback Google:", err);
-    const safeMsg = err?.message ? String(err.message).replace(/"/g, '\\"') : "Erro desconhecido";
-    return res.send(`
-      <html>
-        <head><meta charset="utf-8"/><title>Erro Autenticação Google</title></head>
-        <script>
-          (function(){
-            const frontend = "${FRONTEND_URL}";
-            const payload = { type: "google-auth", success: false, error: "${safeMsg}" };
-            if (window.opener) {
-              window.opener.postMessage(payload, frontend);
-              window.close();
-            } else {
-              try { localStorage.setItem('google_auth_result', JSON.stringify(payload)); } catch(e) {}
-              window.location.replace(frontend + "/?google=error");
-            }
-          })();
-        </script>
-      </html>
-    `);
+    return res.redirect(`${FRONTEND_URL}/home?status=error`);
   }
 });
 
