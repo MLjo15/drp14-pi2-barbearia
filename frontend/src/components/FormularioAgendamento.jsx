@@ -5,6 +5,9 @@ import { DatePicker } from '@mantine/dates';
 import dayjs from 'dayjs';
 import 'dayjs/locale/pt-br';
 
+// Importa a URL base da API a partir das variáveis de ambiente do Vite.
+const BASE_URL = import.meta.env.VITE_API_BASE || 'http://localhost:3000';
+
 // Componente do formulário de agendamento
 export default function FormularioAgendamento({ isOpen, onClose }) {
   // ----------------------------------------------------------------
@@ -118,7 +121,7 @@ export default function FormularioAgendamento({ isOpen, onClose }) {
     setIsBarbeariasLoading(true);
     (async () => {
       try {
-        const res = await fetch('/api/barbearias');
+        const res = await fetch(`${BASE_URL}/api/barbearias`);
         const j = await res.json();
         if (j.success) setBarbearias(j.barbearias || []);
       } catch (e) {
@@ -140,7 +143,7 @@ export default function FormularioAgendamento({ isOpen, onClose }) {
     if (!id) return;
     (async () => {
       try {
-        const res = await fetch(`/api/barbearias/${id}`);
+        const res = await fetch(`${BASE_URL}/api/barbearias/${id}`);
         const j = await res.json();
         if (j.success) {
           const horarios = Array.isArray(j.horarios) ? j.horarios : [];
@@ -176,7 +179,7 @@ export default function FormularioAgendamento({ isOpen, onClose }) {
     setIsSlotsLoading(true);
     (async () => {
       try {
-        const res = await fetch(`/api/barbearias/${id}/availability?date=${dateStr}`);
+        const res = await fetch(`${BASE_URL}/api/barbearias/${id}/availability?date=${dateStr}`);
         const j = await res.json();
         if (j.success) {
           setSlots(
@@ -246,7 +249,7 @@ export default function FormularioAgendamento({ isOpen, onClose }) {
         dataHoraFim = new Date(start.getTime() + interval * 60000).toISOString();
       }
 
-      const res = await fetch('/api/agendamento', {
+      const res = await fetch(`${BASE_URL}/api/agendamento`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

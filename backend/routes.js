@@ -346,24 +346,10 @@ router.get('/barbearias/:id/availability', async (req, res) => {
   }
 });
 
-// Rota 4d: Cadastro de Barbearia (POST)
+// Rota 4d: Cadastro de Barbearia (POST) - VERSÃO CORRETA E COMPLETA
 router.post("/barbearias", async (req, res) => {
   const { nome, proprietario, email, telefone, endereco, intervalo, fuso_horario } = req.body;
-
   try {
-    const { data, error } = await supabase
-      .from("barbearias")
-      .insert([{ nome, proprietario, email, telefone, endereco, intervalo, fuso_horario }])
-      .select()
-      .single();
-
-    if (error) {
-      console.error('Erro insert barbearia:', error);
-      throw error;
-    }
-
-    console.log('Barbearia cadastrada:', { id: data?.id, nome: data?.nome });
-
     // Se houver horários, insere-os
     const horariosPayload = req.body.horarios;
     let createdHorarios = [];
@@ -395,6 +381,21 @@ router.post("/barbearias", async (req, res) => {
         console.error('Erro ao inserir horarios:', hErr);
       }
     }
+
+    const { data, error } = await supabase
+      .from("barbearias")
+      .insert([{ nome, proprietario, email, telefone, endereco, intervalo, fuso_horario }])
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Erro insert barbearia:', error);
+      throw error;
+    }
+
+    console.log('Barbearia cadastrada:', { id: data?.id, nome: data?.nome });
+
+
 
     res.json({ success: true, barbearia: data, horarios: createdHorarios });
   } catch (err) {
