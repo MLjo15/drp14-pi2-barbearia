@@ -3,6 +3,9 @@ import { TextInput, Button, Loader, Notification, NumberInput, Select } from "@m
 import Modal from "./Modal";
 import GCalAuthButton from "./GCalAuthButton";
 
+// Importa a VITE_API_BASE do ambiente (deve ser o URL do Render)
+const BASE_URL = import.meta.env.VITE_API_BASE;
+
 const FormularioCadastro = ({ isOpen, onClose }) => {
   const [formData, setFormData] = useState({
     nome: "",
@@ -52,6 +55,13 @@ const FormularioCadastro = ({ isOpen, onClose }) => {
       return;
     }
 
+    // Verifica se pelo menos um dia de funcionamento foi selecionado
+    if (daysOpen.length === 0) {
+      setError("Por favor, selecione pelo menos um dia de funcionamento.");
+      setIsLoading(false);
+      return;
+    }
+
     try {
       // build horarios from selected days using default times
       const payloadHorarios = daysOpen.map(d => ({
@@ -61,7 +71,8 @@ const FormularioCadastro = ({ isOpen, onClose }) => {
         intervalo_minutos: formData.intervalo
       }));
 
-      const res = await fetch('/api/barbearias', {
+      // CORREÇÃO AQUI: Usando o BASE_URL para chamar o Render
+      const res = await fetch(`${BASE_URL}/api/barbearias`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -82,12 +93,18 @@ const FormularioCadastro = ({ isOpen, onClose }) => {
       try {
         json = raw ? JSON.parse(raw) : {};
       } catch (parseErr) {
-        throw new Error(`Resposta inesperada do servidor: ${raw || 'sem conteúdo'}`);
+        // Se houver erro de parse, exibe o raw para debug
+        throw new Error(`Resposta inesperada do servidor (Erro de Parse JSON). Conteúdo recebido: ${raw || 'sem conteúdo'}`);
       }
 
       setIsLoading(false);
+      if (!res.ok) {
+         // Se a resposta HTTP não for 2xx
+         setError(json.error || `Erro do servidor (${res.status}): ${json.message || 'Falha ao cadastrar.'}`);
+         return;
+      }
       if (!json.success) {
-        setError(json.error || 'Erro ao cadastrar barbearia');
+        setError(json.error || 'Erro ao cadastrar barbearia (Resposta JSON).');
         return;
       }
 
@@ -95,16 +112,21 @@ const FormularioCadastro = ({ isOpen, onClose }) => {
       setNewBarbeariaId(json.barbearia.id || json.barbearia);
     } catch (err) {
       setIsLoading(false);
-      setError(err.message || 'Erro ao cadastrar barbearia');
+      // Aqui, o erro pode ser de rede ou a exceção que levantamos
+      setError(err.message || 'Erro de conexão ou ao cadastrar barbearia');
     }
   };
 
   const handleGoogleConnect = () => {
     if (!newBarbeariaId) {
-      alert("⚠️ Cadastre a barbearia primeiro!");
+      // Substituído alert() por console.error e notificação amigável
+      console.error("⚠️ Cadastre a barbearia primeiro!");
+      // Poderia usar uma notificação aqui se o Mantine estivesse globalmente configurado
+      alert("⚠️ Cadastre a barbearia primeiro!"); 
       return;
     }
-    window.location.href = `/api/auth/google?shop_id=${newBarbeariaId}`;
+    // CORREÇÃO AQUI: Usando o BASE_URL para o link do Google Auth
+    window.location.href = `${BASE_URL}/api/auth/google?shop_id=${newBarbeariaId}`;
   };
 
   if (!isOpen) return null;
@@ -137,7 +159,18 @@ const FormularioCadastro = ({ isOpen, onClose }) => {
           <TextInput label="Email" type="email" name="email" value={formData.email} onChange={(e) => handleChange('email', e.target.value)} required />
           <TextInput label="Endereço Completo" name="endereco" value={formData.endereco} onChange={(e) => handleChange('endereco', e.target.value)} required />
 
-          <Select label="Fuso horário" data={[{ value: 'America/Sao_Paulo', label: 'São Paulo' }, { value: 'America/Manaus', label: 'Manaus' }, { value: 'America/New_York', label: 'Nova York' }, { value: 'Europe/Lisbon', label: 'Lisboa' }]} value={formData.fuso_horario} onChange={(val) => setFormData(prev => ({ ...prev, fuso_horario: val }))} />
+          <Select 
+            label="Fuso horário" 
+            data={[
+              { value: 'America/Sao_Paulo', label: 'São Paulo (GMT-3)' }, 
+              { value: 'America/Manaus', label: 'Manaus (GMT-4)' }, 
+              { value: 'America/New_York', label: 'Nova York (GMT-4)' }, 
+              { value: 'Europe/Lisbon', label: 'Lisboa (GMT+1)' }
+            ]} 
+            value={formData.fuso_horario} 
+            onChange={(val) => setFormData(prev => ({ ...prev, fuso_horario: val }))} 
+            required 
+          />
 
           <div style={{ marginTop: 12 }}>
             <h4 style={{ color: '#fff', marginBottom: 8 }}>Dias de Funcionamento (marque os dias)</h4>
@@ -173,7 +206,13 @@ const FormularioCadastro = ({ isOpen, onClose }) => {
               </div>
               <div style={{ display: 'flex', flexDirection: 'column' }}>
                 <label style={{ color: '#fff', fontSize: 12 }}>Intervalo (min)</label>
-                <NumberInput value={formData.intervalo} onChange={(val) => setFormData(prev => ({ ...prev, intervalo: val }))} min={15} step={15} style={{ width: 120 }} />
+                <NumberInput 
+                    value={formData.intervalo} 
+                    onChange={(val) => setFormData(prev => ({ ...prev, intervalo: val }))} 
+                    min={15} 
+                    step={15} 
+                    style={{ width: 120 }} 
+                />
               </div>
             </div>
           </div>
@@ -185,7 +224,7 @@ const FormularioCadastro = ({ isOpen, onClose }) => {
             type="submit" 
             style={{ marginTop: '20px' }} 
             fullWidth
-            disabled={isLoading}
+            disabled={isLoading || daysOpen.length === 0}
           >
             {isLoading ? <Loader size="sm" color="white" /> : 'Registrar Barbearia'}
           </Button>
