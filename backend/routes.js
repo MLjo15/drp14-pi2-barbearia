@@ -56,18 +56,26 @@ router.get("/auth/google/callback", async (req, res) => {
     // Troca o código de autorização por tokens de acesso e refresh
     const { tokens } = await oauth2Client.getToken(code);
 
-    // Insere ou atualiza (UPSERT) na tabela shop_google_tokens
-    const { error } = await supabase
-      .from("shop_google_tokens")
-      .upsert({
+    // O refresh_token é retornado apenas na primeira vez. 
+    // Usamos o operador spread para garantir que, se for nulo, ele não sobrescreva um valor existente no Supabase.
+    // Embora o Supabase Upsert já gerencie isso, ser explícito é mais seguro.
+    const tokenData = {
         shop_id,
         access_token: tokens.access_token,
-        refresh_token: tokens.refresh_token, // O refresh token é vital para renovar o acesso
         scope: tokens.scope,
         token_type: tokens.token_type,
         expiry_date: tokens.expiry_date,
         updated_at: new Date()
-      }, { onConflict: 'shop_id' }); // Garante que atualiza se o shop_id já existir
+    };
+
+    if (tokens.refresh_token) {
+        tokenData.refresh_token = tokens.refresh_token;
+    }
+
+    // Insere ou atualiza (UPSERT) na tabela shop_google_tokens
+    const { error } = await supabase
+      .from("shop_google_tokens")
+      .upsert(tokenData, { onConflict: 'shop_id' }); // Garante que atualiza se o shop_id já existir
 
     if (error) throw error;
 
