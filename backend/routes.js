@@ -103,9 +103,9 @@ router.get("/auth/google/callback", async (req, res) => {
     // Redireciona para o frontend com uma mensagem de sucesso
     // Usaremos a URL de retorno padrão (que deve ser o Vercel)
     const frontendBaseUrl = process.env.VITE_FRONTEND_URL || 'http://localhost:5173';
-    // Se a conexão foi bem-sucedida, tentamos redirecionar para uma página de sucesso no frontend.
-    // Se esta rota não existir, a janela apenas fechará com a mensagem de sucesso.
-    res.redirect(`${frontendBaseUrl}/auth-success?shop_id=${shop_id}`); 
+    // Redireciona para a página inicial com um parâmetro de sucesso.
+    // O frontend irá ler este parâmetro para exibir a notificação.
+    res.redirect(`${frontendBaseUrl}/?auth_status=success`); 
 
   } catch (err) {
     console.error("Erro no callback Google:", err);
