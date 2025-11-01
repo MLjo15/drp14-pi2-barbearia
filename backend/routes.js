@@ -7,14 +7,14 @@ const router = Router();
 // Loga a variável de ambiente GOOGLE_REDIRECT_URI no console do Render (para debug)
 console.log("DEBUG: GOOGLE_REDIRECT_URI sendo usado:", process.env.GOOGLE_REDIRECT_URI);
 
-// Cria um cliente OAuth2 fora das rotas para ser reutilizado
+// Cria o cliente OAuth2 (usando variáveis de ambiente)
 const oauth2Client = new google.auth.OAuth2(
   process.env.GOOGLE_CLIENT_ID,
   process.env.GOOGLE_CLIENT_SECRET,
   process.env.GOOGLE_REDIRECT_URI
 );
 
-// Middleware para log simples de requisições /api
+// Middleware simples de log
 router.use((req, res, next) => {
   try {
     console.log(`[API] ${req.method} ${req.originalUrl}`);
@@ -25,7 +25,7 @@ router.use((req, res, next) => {
   next();
 });
 
-// 🔹 ROTA DE AUTENTICAÇÃO GOOGLE 1/2: Redireciona para o Google
+// 🔹 ROTA 1/2 - Inicia o fluxo de autenticação Google
 router.get("/auth/google", (req, res) => {
   const { shop_id } = req.query;
   if (!shop_id) return res.status(400).send("Faltando shop_id");
@@ -40,32 +40,33 @@ router.get("/auth/google", (req, res) => {
   res.redirect(url);
 });
 
-// 🔹 ROTA DE AUTENTICAÇÃO GOOGLE 2/2: Callback (fecha popup e envia resultado)
+// 🔹 ROTA 2/2 - Callback do Google OAuth
 router.get("/auth/google/callback", async (req, res) => {
   const { code, state } = req.query;
   const shop_id = state;
-  const expectedUri = process.env.GOOGLE_REDIRECT_URI;
+  const expectedUri = process.env.GOOGLE_REDIRECT_URI || "";
   const FRONTEND_URL =
-    process.env.VITE_FRONTEND_URL || "http://localhost:5173";
+    (process.env.FRONTEND_URL ||
+      process.env.VITE_FRONTEND_URL ||
+      "http://localhost:5173").replace(/\/$/, "");
 
   if (!code || !shop_id) {
     console.error("Erro no callback Google: Código ou ShopID ausente.");
     return res.send(`
       <html>
-        <head>
-          <script>
+        <head><meta charset="utf-8"/><title>Erro Autenticação Google</title></head>
+        <script>
+          (function(){
+            const frontend = "${FRONTEND_URL}";
             if (window.opener) {
-              window.opener.postMessage(
-                { type: "google-auth", success: false },
-                "${FRONTEND_URL}"
-              );
+              window.opener.postMessage({ type: "google-auth", success: false, message: "Código ou shop_id ausente" }, frontend);
               window.close();
             } else {
-              window.location.href = "${FRONTEND_URL}?google=error";
+              try { localStorage.setItem('google_auth_result', JSON.stringify({ success: false })); } catch(e) {}
+              window.location.replace(frontend + "/?google=error");
             }
-          </script>
-        </head>
-        <body>❌ Erro ao conectar com o Google. Pode fechar esta janela.</body>
+          })();
+        </script>
       </html>
     `);
   }
@@ -90,49 +91,49 @@ router.get("/auth/google/callback", async (req, res) => {
 
     if (error) throw error;
 
-    // ✅ Sucesso → fecha o popup e notifica o frontend
-    res.send(`
+    // ✅ Sucesso → fecha popup e envia mensagem para o frontend
+    return res.send(`
       <html>
-        <head>
-          <script>
+        <head><meta charset="utf-8"/><title>Google Auth Sucesso</title></head>
+        <script>
+          (function(){
+            const frontend = "${FRONTEND_URL}";
             if (window.opener) {
-              window.opener.postMessage(
-                { type: "google-auth", success: true },
-                "${FRONTEND_URL}"
-              );
+              window.opener.postMessage({ type: "google-auth", success: true }, frontend);
               window.close();
             } else {
-              window.location.href = "${FRONTEND_URL}?google=success";
+              try { localStorage.setItem('google_auth_result', JSON.stringify({ success: true })); } catch(e) {}
+              window.location.replace(frontend + "/?google=success");
             }
-          </script>
-        </head>
-        <body>✅ Conta Google conectada com sucesso! Pode fechar esta janela.</body>
+          })();
+        </script>
       </html>
     `);
   } catch (err) {
     console.error("Erro no callback Google:", err);
-    res.send(`
+    const safeMsg = err?.message ? String(err.message).replace(/"/g, '\\"') : "Erro desconhecido";
+    return res.send(`
       <html>
-        <head>
-          <script>
+        <head><meta charset="utf-8"/><title>Erro Autenticação Google</title></head>
+        <script>
+          (function(){
+            const frontend = "${FRONTEND_URL}";
+            const payload = { type: "google-auth", success: false, error: "${safeMsg}" };
             if (window.opener) {
-              window.opener.postMessage(
-                { type: "google-auth", success: false, error: "${err.message}" },
-                "${FRONTEND_URL}"
-              );
+              window.opener.postMessage(payload, frontend);
               window.close();
             } else {
-              window.location.href = "${FRONTEND_URL}?google=error";
+              try { localStorage.setItem('google_auth_result', JSON.stringify(payload)); } catch(e) {}
+              window.location.replace(frontend + "/?google=error");
             }
-          </script>
-        </head>
-        <body>❌ Falha ao conectar com o Google. Pode fechar esta janela.</body>
+          })();
+        </script>
       </html>
     `);
   }
 });
 
-// 🔹 ROTA DE AGENDAMENTO
+// 🔹 CRIAÇÃO DE AGENDAMENTO
 router.post("/agendamento", async (req, res) => {
   const {
     shop_id,
@@ -241,7 +242,7 @@ router.post("/agendamento", async (req, res) => {
   }
 });
 
-// (demais rotas de barbearias e disponibilidade continuam iguais)
+// 🔹 LISTAR BARBEARIAS
 router.get("/barbearias", async (req, res) => {
   try {
     const { data, error } = await supabase
@@ -257,7 +258,7 @@ router.get("/barbearias", async (req, res) => {
   }
 });
 
-// Exporta função de setup
+// 🔹 Exporta a função setupRoutes
 export function setupRoutes(app) {
   app.use("/api", router);
 }
