@@ -46,9 +46,7 @@ router.get("/auth/google/callback", async (req, res) => {
   const shop_id = state;
   const expectedUri = process.env.GOOGLE_REDIRECT_URI;
   const FRONTEND_URL =
-    process.env.VITE_FRONTEND_URL ||
-    process.env.FRONTEND_URL ||
-    "http://localhost:5173";
+    process.env.VITE_FRONTEND_URL || "http://localhost:5173";
 
   if (!code || !shop_id) {
     console.error("Erro no callback Google: Código ou ShopID ausente.");
