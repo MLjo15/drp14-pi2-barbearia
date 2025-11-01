@@ -51,9 +51,33 @@ router.get("/auth/google", (req, res) => {
 router.get("/auth/google/callback", async (req, res) => {
   const { code, state } = req.query;
   const shop_id = state;
+  const expectedUri = process.env.GOOGLE_REDIRECT_URI; // Captura o URI esperado
 
   if (!code || !shop_id) {
-    return res.status(400).send("Código ou ShopID ausente.");
+    // Se não há código, é um erro. Usamos o HTML de debug aqui.
+    console.error("Erro no callback Google: Código ou ShopID ausente.");
+     return res.status(400).send(`
+      <html>
+        <head>
+          <title>Erro de Conexão Google</title>
+          <style>
+            body { font-family: Arial, sans-serif; background-color: #f8f8f8; padding: 20px; }
+            .container { background-color: #fff; padding: 30px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+            h2 { color: #d9534f; }
+            code { background-color: #eee; padding: 2px 4px; border-radius: 3px; font-weight: bold; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <h2>🚨 Erro na Autorização Google</h2>
+            <p><strong>A URL de redirecionamento esperada pelo Render é:</strong> <code>${expectedUri}</code></p>
+            <p>Se você chegou nesta página e o Google Calendar não conectou, verifique se essa URL está <strong>EXATAMENTE</strong> configurada no seu Google Cloud Console, incluindo \`http\` ou \`https\` e a barra final.</p>
+            <p>Por favor, tente fechar esta janela e repetir o processo. Código ou ShopID ausente.</p>
+            <button onclick="window.close()" style="margin-top: 20px; padding: 10px 15px; background-color: #5bc0de; color: white; border: none; border-radius: 4px; cursor: pointer;">Fechar Janela</button>
+          </div>
+        </body>
+      </html>
+    `);
   }
 
   try {
@@ -76,12 +100,39 @@ router.get("/auth/google/callback", async (req, res) => {
 
     if (error) throw error;
 
-    // Redireciona para o frontend com uma mensagem de sucesso (ou apenas envia uma mensagem)
-    res.send("✅ Conta Google conectada com sucesso! Você pode fechar esta janela.");
+    // Redireciona para o frontend com uma mensagem de sucesso
+    // Usaremos a URL de retorno padrão (que deve ser o Vercel)
+    const frontendBaseUrl = process.env.VITE_FRONTEND_URL || 'http://localhost:5173';
+    // Se a conexão foi bem-sucedida, tentamos redirecionar para uma página de sucesso no frontend.
+    // Se esta rota não existir, a janela apenas fechará com a mensagem de sucesso.
+    res.redirect(`${frontendBaseUrl}/auth-success?shop_id=${shop_id}`); 
 
   } catch (err) {
     console.error("Erro no callback Google:", err);
-    res.status(500).send("Erro ao conectar conta Google. Verifique os logs do servidor.");
+    // Envia uma mensagem de erro mais detalhada para o usuário, incluindo o URI esperado
+    res.status(500).send(`
+      <html>
+        <head>
+          <title>Erro de Conexão Google</title>
+          <style>
+            body { font-family: Arial, sans-serif; background-color: #f8f8f8; padding: 20px; }
+            .container { background-color: #fff; padding: 30px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+            h2 { color: #d9534f; }
+            code { background-color: #eee; padding: 2px 4px; border-radius: 3px; font-weight: bold; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <h2>🚨 Erro ao conectar conta Google</h2>
+            <p>Ocorreu um erro ao tentar trocar o código de autorização por tokens.</p>
+            <p><strong>A URL de redirecionamento esperada pelo Render é:</strong> <code>${expectedUri}</code></p>
+            <p>Por favor, verifique se essa URL está <strong>EXATAMENTE</strong> configurada no seu Google Cloud Console, sem espaços extras ou caracteres invisíveis.</p>
+            <p>Detalhe do Erro: ${err.message || 'Erro desconhecido.'}</p>
+            <button onclick="window.close()" style="margin-top: 20px; padding: 10px 15px; background-color: #5bc0de; color: white; border: none; border-radius: 4px; cursor: pointer;">Fechar Janela</button>
+          </div>
+        </body>
+      </html>
+    `);
   }
 });
 
@@ -160,7 +211,7 @@ router.post("/agendamento", async (req, res) => {
           calendarId: 'primary',
           requestBody: {
             summary: `Agendamento - ${cliente_nome}`,
-            description: `Serviço: ${servico}\nCliente: ${cliente_nome}\nEmail: ${cliente_email}\nTelefone: ${cliente_telefone}`,
+            description: `Serviço: ${servico}\nCliente: ${cliente_email}\nTelefone: ${cliente_telefone}`,
             start: { dateTime: data_hora_inicio, timeZone: 'America/Sao_Paulo' },
             end: { dateTime: data_hora_fim, timeZone: 'America/Sao_Paulo' },
             // Adiciona o cliente como participante (opcional)

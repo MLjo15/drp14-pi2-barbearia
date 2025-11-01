@@ -62,6 +62,13 @@ const FormularioCadastro = ({ isOpen, onClose }) => {
       return;
     }
 
+    // Validação básica para tempos
+    if (defaultOpenTime >= defaultCloseTime) {
+      setError("A hora de abertura deve ser anterior à hora de fechamento.");
+      setIsLoading(false);
+      return;
+    }
+
     try {
       // build horarios from selected days using default times
       const payloadHorarios = daysOpen.map(d => ({
@@ -99,9 +106,9 @@ const FormularioCadastro = ({ isOpen, onClose }) => {
 
       setIsLoading(false);
       if (!res.ok) {
-         // Se a resposta HTTP não for 2xx
-         setError(json.error || `Erro do servidor (${res.status}): ${json.message || 'Falha ao cadastrar.'}`);
-         return;
+          // Se a resposta HTTP não for 2xx
+          setError(json.error || `Erro do servidor (${res.status}): ${json.message || 'Falha ao cadastrar.'}`);
+          return;
       }
       if (!json.success) {
         setError(json.error || 'Erro ao cadastrar barbearia (Resposta JSON).');
@@ -117,17 +124,8 @@ const FormularioCadastro = ({ isOpen, onClose }) => {
     }
   };
 
-  const handleGoogleConnect = () => {
-    if (!newBarbeariaId) {
-      // Substituído alert() por console.error e notificação amigável
-      console.error("⚠️ Cadastre a barbearia primeiro!");
-      // Poderia usar uma notificação aqui se o Mantine estivesse globalmente configurado
-      alert("⚠️ Cadastre a barbearia primeiro!"); 
-      return;
-    }
-    // CORREÇÃO AQUI: Usando o BASE_URL para o link do Google Auth
-    window.location.href = `${BASE_URL}/api/auth/google?shop_id=${newBarbeariaId}`;
-  };
+  // Removida a função handleGoogleConnect, pois a lógica agora está em GCalAuthButton
+  // O componente GCalAuthButton agora recebe o BASE_URL para montar o link.
 
   if (!isOpen) return null;
 
@@ -139,7 +137,8 @@ const FormularioCadastro = ({ isOpen, onClose }) => {
           <Notification title="Próximo Passo" color="green" style={{ marginBottom: 15 }}>
             Barbearia cadastrada. Agora, conecte seu Google Calendar.
           </Notification>
-          <GCalAuthButton barbeariaId={newBarbeariaId} />
+          {/* Adiciona BASE_URL para GCalAuthButton usar */}
+          <GCalAuthButton barbeariaId={newBarbeariaId} baseUrl={BASE_URL} />
         </div>
       </Modal>
     );

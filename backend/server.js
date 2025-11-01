@@ -3,7 +3,8 @@ import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
 import path from "path";
-import { setupRoutes } from "./routes.js";
+// CORREÇÃO: Importa a função setupRoutes de routes.js
+import { setupRoutes } from "./routes.js"; 
 import { supabase } from "./supabaseClient.js"; // Importa o cliente Supabase
 
 // Carrega as variáveis de ambiente (útil para desenvolvimento local)
@@ -11,12 +12,13 @@ dotenv.config();
 
 const app = express();
 
-// Configuração do CORS (importante para comunicação Frontend/Backend)
+// --- CONFIGURAÇÃO DO CORS (CRUCIAL PARA VERCEL <-> RENDER) ---
+// VITE_FRONTEND_URL deve ser definida no seu backend (Render) com o domínio do Vercel
+const allowedOrigin = process.env.VITE_FRONTEND_URL || 'http://localhost:5173';
+console.log(`CORS configurado para a origem: ${allowedOrigin}`);
+
 app.use(cors({
-  // O Render e o Vercel definem a URL de origem.
-  // VITE_FRONTEND_URL deve ser definido no seu backend (Render) com o domínio do Vercel
-  // Ex: https://drp14-pi2-barbearia.vercel.app
-  origin: process.env.VITE_FRONTEND_URL || 'http://localhost:5173', 
+  origin: allowedOrigin,
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
   allowedHeaders: ['Content-Type', 'Authorization'],
 }));
@@ -24,7 +26,6 @@ app.use(cors({
 app.use(express.json());
 
 // Serve static files if needed (ajuste o caminho conforme a estrutura do seu projeto)
-// Esta linha pode ser removida se não houver arquivos estáticos no backend
 app.use(express.static(path.join(path.dirname(new URL(import.meta.url).pathname), "..", "public")));
 
 // Monta as rotas API definidas em routes.js
@@ -33,40 +34,39 @@ setupRoutes(app);
 // Rota de saúde simples (Health Check)
 app.get("/api/health", (req, res) => res.json({ ok: true }));
 
-// --- MECANISMOS ANTI-SLEEP E DE MANUTENÇÃO (Adaptados para o Render) ---
+// --- MECANISMOS ANTI-SLEEP E DE MANUTENÇÃO ---
 
-// Rota de PING para manter o Render ativo (chamada por serviço de monitoramento)
+// Rota de PING para manter o Render ativo (chamada a cada ~10 minutos)
 app.get('/ping', (req, res) => {
     // Retorna um status 200 OK. Isso é o suficiente para 'acordar' o Render.
+    // Esta rota deve ser chamada pelo seu serviço de Cron Job externo (UptimeRobot).
     res.status(200).send('Serviço ativo.');
 });
 
-// Rota de Manutenção (Exemplo: para deletar logs antigos do Supabase)
-// ATENÇÃO: Esta é uma rota de exemplo e DEVE SER protegida ou chamada por um cron job seguro.
-// O código abaixo simula a lógica de manutenção. Você pode adaptar ou remover.
-const SIX_DAYS_MS = 6 * 24 * 60 * 60 * 1000;
-
-app.get('/manutencao-semanal', async (req, res) => {
+// Rota de Manutenção Semanal (chamada diariamente pelo UptimeRobot, mas executa a cada 6 dias)
+// ATENÇÃO: É necessário ter a tabela 'manutencao_log' criada no Supabase
+app.get('/api/manutencao-semanal', async (req, res) => {
+    const SIX_DAYS_MS = 6 * 24 * 60 * 60 * 1000;
     const now = new Date();
-    
+
     try {
-        // --- 1. Verifica Última Execução ---
-        const { data: lastLog, error: logError } = await supabase
+        // --- 1. Verificar Última Execução ---
+        const { data: lastExecution, error: fetchError } = await supabase
             .from('manutencao_log')
             .select('data_execucao')
             .eq('tarefa', 'Limpeza de Dados (A cada 6 dias)')
             .order('data_execucao', { ascending: false })
             .limit(1)
             .single();
-
-        if (logError && logError.code !== 'PGRST116') { // PGRST116 = No rows found
-            console.error('Erro ao buscar último log:', logError);
-            throw logError;
+        
+        if (fetchError && fetchError.code !== 'PGRST116') { // PGRST116: No rows found
+             console.error('Erro ao buscar log:', fetchError);
+             throw fetchError;
         }
 
-        if (lastLog && (now.getTime() - new Date(lastLog.data_execucao).getTime() < SIX_DAYS_MS)) {
-            console.log('Manutenção pulada: executada recentemente.');
-            res.status(200).send('Manutenção pulada: executada recentemente.');
+        if (lastExecution && (now.getTime() - new Date(lastExecution.data_execucao).getTime()) < SIX_DAYS_MS) {
+            console.log('Manutenção já rodou nos últimos 6 dias. Pulando.');
+            res.status(200).send('Manutenção pulada (executada recentemente).');
             return;
         }
 
@@ -75,7 +75,6 @@ app.get('/manutencao-semanal', async (req, res) => {
         // --- 2. Deletar Dados Antigos (Exemplo de 6 dias) ---
         const SIX_DAYS_AGO = new Date(Date.now() - SIX_DAYS_MS).toISOString();
         
-        // Exemplo: Deletar dados de log antigos (ajuste a tabela conforme a necessidade)
         const { error: deleteError } = await supabase
             .from('manutencao_log')
             .delete()
@@ -115,11 +114,7 @@ app.use((req, res) => {
 });
 
 
-// 💡 O Render (e plataformas cloud) fornece a porta via variável de ambiente PORT.
-const PORT = process.env.PORT || 3001; 
-
-// Inicia o servidor
+const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-  console.log(`Backend rodando na porta ${PORT}`);
-  console.log(`URL do Backend (Render): ${process.env.BASE_URL}`);
+  console.log(`🚀 Servidor rodando na porta ${PORT}`);
 });
