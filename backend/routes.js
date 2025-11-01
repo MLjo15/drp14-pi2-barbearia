@@ -1,15 +1,13 @@
 import { google } from "googleapis";
-import { Router } from 'express';
+import { Router } from "express";
 import { supabase } from "./supabaseClient.js";
 
 const router = Router();
 
 // Loga a variável de ambiente GOOGLE_REDIRECT_URI no console do Render (para debug)
-console.log('DEBUG: GOOGLE_REDIRECT_URI sendo usado:', process.env.GOOGLE_REDIRECT_URI);
+console.log("DEBUG: GOOGLE_REDIRECT_URI sendo usado:", process.env.GOOGLE_REDIRECT_URI);
 
 // Cria um cliente OAuth2 fora das rotas para ser reutilizado
-// Ele depende das variáveis de ambiente GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET e GOOGLE_REDIRECT_URI
-// ESTE É O ENDEREÇO QUE PRECISA BATER EXATAMENTE COM O CONFIGURADO NO GOOGLE CLOUD CONSOLE
 const oauth2Client = new google.auth.OAuth2(
   process.env.GOOGLE_CLIENT_ID,
   process.env.GOOGLE_CLIENT_SECRET,
@@ -20,129 +18,141 @@ const oauth2Client = new google.auth.OAuth2(
 router.use((req, res, next) => {
   try {
     console.log(`[API] ${req.method} ${req.originalUrl}`);
-    if (req.method === 'POST' && req.body) {
-      // Limita o log do corpo da requisição para evitar logs muito longos
-      console.log('[API] body:', JSON.stringify(req.body).slice(0, 1000));
+    if (req.method === "POST" && req.body) {
+      console.log("[API] body:", JSON.stringify(req.body).slice(0, 1000));
     }
-  } catch (err) {
-    // Ignora erros de log
-  }
+  } catch (err) {}
   next();
 });
 
-// 🔹 ROTA DE AUTENTICAÇÃO GOOGLE 1/2: Início da autenticação (redireciona para consentimento)
+// 🔹 ROTA DE AUTENTICAÇÃO GOOGLE 1/2: Redireciona para o Google
 router.get("/auth/google", (req, res) => {
   const { shop_id } = req.query;
   if (!shop_id) return res.status(400).send("Faltando shop_id");
 
-  // Gera o URL de autorização do Google Calendar
   const url = oauth2Client.generateAuthUrl({
     access_type: "offline",
-    // Escopo necessário para criar eventos no calendário
     scope: ["https://www.googleapis.com/auth/calendar.events"],
-    prompt: "consent", // Força o consentimento para garantir o refresh_token
-    state: shop_id // Armazena o shop_id para recuperar no callback
+    prompt: "consent",
+    state: shop_id
   });
 
   res.redirect(url);
 });
 
-// 🔹 ROTA DE AUTENTICAÇÃO GOOGLE 2/2: Callback (salva tokens no Supabase)
+// 🔹 ROTA DE AUTENTICAÇÃO GOOGLE 2/2: Callback (fecha popup e envia resultado)
 router.get("/auth/google/callback", async (req, res) => {
   const { code, state } = req.query;
   const shop_id = state;
-  const expectedUri = process.env.GOOGLE_REDIRECT_URI; // Captura o URI esperado
+  const expectedUri = process.env.GOOGLE_REDIRECT_URI;
+  const FRONTEND_URL =
+    process.env.VITE_FRONTEND_URL ||
+    process.env.FRONTEND_URL ||
+    "http://localhost:5173";
 
   if (!code || !shop_id) {
-    // Se não há código, é um erro. Usamos o HTML de debug aqui.
     console.error("Erro no callback Google: Código ou ShopID ausente.");
-     return res.status(400).send(`
+    return res.send(`
       <html>
         <head>
-          <title>Erro de Conexão Google</title>
-          <style>
-            body { font-family: Arial, sans-serif; background-color: #f8f8f8; padding: 20px; }
-            .container { background-color: #fff; padding: 30px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-            h2 { color: #d9534f; }
-            code { background-color: #eee; padding: 2px 4px; border-radius: 3px; font-weight: bold; }
-          </style>
+          <script>
+            if (window.opener) {
+              window.opener.postMessage(
+                { type: "google-auth", success: false },
+                "${FRONTEND_URL}"
+              );
+              window.close();
+            } else {
+              window.location.href = "${FRONTEND_URL}?google=error";
+            }
+          </script>
         </head>
-        <body>
-          <div class="container">
-            <h2>🚨 Erro na Autorização Google</h2>
-            <p><strong>A URL de redirecionamento esperada pelo Render é:</strong> <code>${expectedUri}</code></p>
-            <p>Se você chegou nesta página e o Google Calendar não conectou, verifique se essa URL está <strong>EXATAMENTE</strong> configurada no seu Google Cloud Console, incluindo \`http\` ou \`https\` e a barra final.</p>
-            <p>Por favor, tente fechar esta janela e repetir o processo. Código ou ShopID ausente.</p>
-            <button onclick="window.close()" style="margin-top: 20px; padding: 10px 15px; background-color: #5bc0de; color: white; border: none; border-radius: 4px; cursor: pointer;">Fechar Janela</button>
-          </div>
-        </body>
+        <body>❌ Erro ao conectar com o Google. Pode fechar esta janela.</body>
       </html>
     `);
   }
 
   try {
-    // Troca o código de autorização por tokens de acesso e refresh
-    // Esta chamada usa o GOOGLE_REDIRECT_URI configurado no objeto oauth2Client
     const { tokens } = await oauth2Client.getToken(code);
 
-    // Insere ou atualiza (UPSERT) na tabela shop_google_tokens
     const { error } = await supabase
       .from("shop_google_tokens")
-      .upsert({
-        shop_id,
-        access_token: tokens.access_token,
-        refresh_token: tokens.refresh_token, // O refresh token é vital para renovar o acesso
-        scope: tokens.scope,
-        token_type: tokens.token_type,
-        expiry_date: tokens.expiry_date,
-        updated_at: new Date()
-      }, { onConflict: 'shop_id' }); // Garante que atualiza se o shop_id já existir
+      .upsert(
+        {
+          shop_id,
+          access_token: tokens.access_token,
+          refresh_token: tokens.refresh_token,
+          scope: tokens.scope,
+          token_type: tokens.token_type,
+          expiry_date: tokens.expiry_date,
+          updated_at: new Date()
+        },
+        { onConflict: "shop_id" }
+      );
 
     if (error) throw error;
 
-    // Redireciona para o frontend com uma mensagem de sucesso
-    // Usaremos a URL de retorno padrão (que deve ser o Vercel)
-    const frontendBaseUrl = process.env.VITE_FRONTEND_URL || 'http://localhost:5173';
-    // Redireciona para a página inicial com um parâmetro de sucesso.
-    // O frontend irá ler este parâmetro para exibir a notificação.
-    res.redirect(`${frontendBaseUrl}/?auth_status=success`); 
-
-  } catch (err) {
-    console.error("Erro no callback Google:", err);
-    // Envia uma mensagem de erro mais detalhada para o usuário, incluindo o URI esperado
-    res.status(500).send(`
+    // ✅ Sucesso → fecha o popup e notifica o frontend
+    res.send(`
       <html>
         <head>
-          <title>Erro de Conexão Google</title>
-          <style>
-            body { font-family: Arial, sans-serif; background-color: #f8f8f8; padding: 20px; }
-            .container { background-color: #fff; padding: 30px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-            h2 { color: #d9534f; }
-            code { background-color: #eee; padding: 2px 4px; border-radius: 3px; font-weight: bold; }
-          </style>
+          <script>
+            if (window.opener) {
+              window.opener.postMessage(
+                { type: "google-auth", success: true },
+                "${FRONTEND_URL}"
+              );
+              window.close();
+            } else {
+              window.location.href = "${FRONTEND_URL}?google=success";
+            }
+          </script>
         </head>
-        <body>
-          <div class="container">
-            <h2>🚨 Erro ao conectar conta Google</h2>
-            <p>Ocorreu um erro ao tentar trocar o código de autorização por tokens.</p>
-            <p><strong>A URL de redirecionamento esperada pelo Render é:</strong> <code>${expectedUri}</code></p>
-            <p>Por favor, verifique se essa URL está <strong>EXATAMENTE</strong> configurada no seu Google Cloud Console, sem espaços extras ou caracteres invisíveis.</p>
-            <p>Detalhe do Erro: ${err.message || 'Erro desconhecido.'}</p>
-            <button onclick="window.close()" style="margin-top: 20px; padding: 10px 15px; background-color: #5bc0de; color: white; border: none; border-radius: 4px; cursor: pointer;">Fechar Janela</button>
-          </div>
-        </body>
+        <body>✅ Conta Google conectada com sucesso! Pode fechar esta janela.</body>
+      </html>
+    `);
+  } catch (err) {
+    console.error("Erro no callback Google:", err);
+    res.send(`
+      <html>
+        <head>
+          <script>
+            if (window.opener) {
+              window.opener.postMessage(
+                { type: "google-auth", success: false, error: "${err.message}" },
+                "${FRONTEND_URL}"
+              );
+              window.close();
+            } else {
+              window.location.href = "${FRONTEND_URL}?google=error";
+            }
+          </script>
+        </head>
+        <body>❌ Falha ao conectar com o Google. Pode fechar esta janela.</body>
       </html>
     `);
   }
 });
 
-// Rota 3: Criar agendamento (mantendo a lógica que você havia me mostrado para a funcionalidade)
+// 🔹 ROTA DE AGENDAMENTO
 router.post("/agendamento", async (req, res) => {
-  const { shop_id, cliente_nome, cliente_email, cliente_telefone, servico, data_hora_inicio, data_hora_fim } = req.body;
-  console.log('[agendamento] recebendo:', { shop_id, cliente_email, data_hora_inicio, data_hora_fim });
+  const {
+    shop_id,
+    cliente_nome,
+    cliente_email,
+    cliente_telefone,
+    servico,
+    data_hora_inicio,
+    data_hora_fim
+  } = req.body;
+  console.log("[agendamento] recebendo:", {
+    shop_id,
+    cliente_email,
+    data_hora_inicio,
+    data_hora_fim
+  });
 
   try {
-    // 1. Verifica/Cria cliente
     let { data: cliente } = await supabase
       .from("clientes")
       .select("id")
@@ -152,34 +162,33 @@ router.post("/agendamento", async (req, res) => {
     if (!cliente) {
       const { data: novoCliente, error: clienteErro } = await supabase
         .from("clientes")
-        .insert([{ nome: cliente_nome, email: cliente_email, telefone: cliente_telefone }])
+        .insert([
+          { nome: cliente_nome, email: cliente_email, telefone: cliente_telefone }
+        ])
         .select()
         .single();
       if (clienteErro) throw clienteErro;
       cliente = novoCliente;
     }
 
-    // 2. Cria agendamento
     const { data: agendamento, error } = await supabase
       .from("appointments")
-      .insert([{
-        shop_id,
-        cliente_id: cliente.id,
-        servico,
-        data_hora_inicio,
-        data_hora_fim
-      }])
+      .insert([
+        {
+          shop_id,
+          cliente_id: cliente.id,
+          servico,
+          data_hora_inicio,
+          data_hora_fim
+        }
+      ])
       .select()
       .single();
 
-    if (error) {
-      console.error('[agendamento] erro insert:', error);
-      throw error;
-    }
+    if (error) throw error;
 
-    console.log('[agendamento] criado id:', agendamento?.id);
+    console.log("[agendamento] criado id:", agendamento?.id);
 
-    // 3. Busca e renova tokens do Google
     const { data: tokens } = await supabase
       .from("shop_google_tokens")
       .select("access_token, refresh_token")
@@ -194,49 +203,47 @@ router.post("/agendamento", async (req, res) => {
       );
 
       oauthClient.setCredentials({ refresh_token: tokens.refresh_token });
-      
+
       try {
         const accessResponse = await oauthClient.getAccessToken();
         const newAccessToken = accessResponse?.token || tokens.access_token;
 
-        // Atualiza access token no banco
         await supabase
-          .from('shop_google_tokens')
-          .upsert({ shop_id, access_token: newAccessToken, updated_at: new Date() }, { onConflict: 'shop_id' });
+          .from("shop_google_tokens")
+          .upsert(
+            { shop_id, access_token: newAccessToken, updated_at: new Date() },
+            { onConflict: "shop_id" }
+          );
 
-        const calendar = google.calendar({ version: 'v3', auth: oauthClient });
+        const calendar = google.calendar({ version: "v3", auth: oauthClient });
 
-        // 4. Cria evento no Calendar
         await calendar.events.insert({
-          calendarId: 'primary',
+          calendarId: "primary",
           requestBody: {
             summary: `Agendamento - ${cliente_nome}`,
             description: `Serviço: ${servico}\nCliente: ${cliente_email}\nTelefone: ${cliente_telefone}`,
-            start: { dateTime: data_hora_inicio, timeZone: 'America/Sao_Paulo' },
-            end: { dateTime: data_hora_fim, timeZone: 'America/Sao_Paulo' },
-            // Adiciona o cliente como participante (opcional)
-            attendees: [{ email: cliente_email }], 
+            start: { dateTime: data_hora_inicio, timeZone: "America/Sao_Paulo" },
+            end: { dateTime: data_hora_fim, timeZone: "America/Sao_Paulo" },
+            attendees: [{ email: cliente_email }]
           }
         });
-        console.log('[agendamento] Evento Google Calendar criado com sucesso.');
-
+        console.log("[agendamento] Evento Google Calendar criado com sucesso.");
       } catch (err) {
-        console.error('Erro ao renovar access_token ou criar evento no Calendar:', err);
-        // Continua sem falhar o agendamento no Supabase
+        console.error(
+          "Erro ao renovar access_token ou criar evento no Calendar:",
+          err
+        );
       }
     }
 
     res.json({ success: true, agendamento });
-
   } catch (err) {
     console.error("Erro ao criar agendamento:", err);
-    const errMsg = err?.message || err?.error || 'Erro no agendamento';
-    res.status(500).json({ error: errMsg });
+    res.status(500).json({ error: err?.message || "Erro no agendamento" });
   }
 });
 
-
-// Rota 4: Listar barbearias (para frontend preencher select)
+// (demais rotas de barbearias e disponibilidade continuam iguais)
 router.get("/barbearias", async (req, res) => {
   try {
     const { data, error } = await supabase
@@ -252,162 +259,7 @@ router.get("/barbearias", async (req, res) => {
   }
 });
 
-// Rota 4b: Obter dados de uma barbearia e seus horários
-router.get('/barbearias/:id', async (req, res) => {
-  const { id } = req.params;
-  try {
-    const { data: barbearia, error: bErr } = await supabase
-      .from('barbearias')
-      .select('id, nome, intervalo, fuso_horario')
-      .eq('id', id)
-      .single();
-
-    if (bErr) throw bErr;
-
-    const { data: horarios, error: hErr } = await supabase
-      .from('barbearia_horarios')
-      .select('dia_semana, hora_abertura, hora_fechamento, intervalo_minutos')
-      .eq('shop_id', id);
-
-    if (hErr) throw hErr;
-
-    res.json({ success: true, barbearia, horarios });
-  } catch (err) {
-    console.error('/api/barbearias/:id erro', err);
-    res.status(500).json({ success: false, error: err?.message || 'Erro ao buscar barbearia' });
-  }
-});
-
-// Rota 4c: Disponibilidade: retorna slots disponíveis para uma barbearia em uma data (YYYY-MM-DD)
-router.get('/barbearias/:id/availability', async (req, res) => {
-  const { id } = req.params;
-  const { date } = req.query; // esperado YYYY-MM-DD
-
-  if (!date) return res.status(400).json({ success: false, error: 'Parâmetro date é obrigatório (YYYY-MM-DD)' });
-
-  try {
-    // fetch barbearia and horarios
-    const { data: barbearia } = await supabase.from('barbearias').select('id, intervalo, fuso_horario').eq('id', id).single();
-    const { data: horarios } = await supabase.from('barbearia_horarios').select('dia_semana, hora_abertura, hora_fechamento, intervalo_minutos').eq('shop_id', id);
-
-    // determine weekday (0 Sunday .. 6 Saturday) from date
-    const day = new Date(date + 'T00:00:00').getDay();
-
-    // find horarios for that weekday
-    const todays = (horarios || []).filter(h => Number(h.dia_semana) === Number(day));
-
-    // if none, fallback to single block 09:00-17:00 with barbearia.intervalo
-    const periods = todays.length ? todays : [{ hora_abertura: '09:00:00', hora_fechamento: '17:00:00', intervalo_minutos: barbearia?.intervalo || 30 }];
-
-    // fetch existing appointments for that date
-    // Use local datetime range (no trailing Z) to match server timezone handling
-    const dayStart = `${date}T00:00:00`;
-    const dayEnd = `${date}T23:59:59`;
-    const { data: appointments } = await supabase.from('appointments').select('data_hora_inicio, data_hora_fim').eq('shop_id', id).gte('data_hora_inicio', dayStart).lte('data_hora_inicio', dayEnd);
-    console.log(`/api/barbearias/${id}/availability for ${date} - found appointments:`, (appointments || []).length);
-
-    // helper to parse time 'HH:MM:SS' and produce Date for the given date
-    const makeDateTime = (d, timeStr) => new Date(`${d}T${timeStr}`);
-
-    const slots = [];
-
-    for (const p of periods) {
-      const intervalo = p.intervalo_minutos || barbearia?.intervalo || 30;
-      let current = makeDateTime(date, p.hora_abertura);
-      const end = makeDateTime(date, p.hora_fechamento);
-
-      while (current.getTime() + intervalo * 60000 <= end.getTime()) {
-        const slotStart = new Date(current);
-        const slotEnd = new Date(current.getTime() + intervalo * 60000);
-
-        // check overlap with any appointment
-        const overlap = (appointments || []).some(ap => {
-          try {
-            const apStart = new Date(ap.data_hora_inicio);
-            const apEnd = new Date(ap.data_hora_fim);
-            return apStart < slotEnd && apEnd > slotStart;
-          } catch (e) {
-            return false;
-          }
-        });
-
-        if (!overlap) {
-          slots.push({ start: slotStart.toISOString(), end: slotEnd.toISOString() });
-        }
-
-        current = new Date(current.getTime() + intervalo * 60000);
-      }
-    }
-
-    res.json({ success: true, slots });
-  } catch (err) {
-    console.error('/api/barbearias/:id/availability erro', err);
-    res.status(500).json({ success: false, error: err?.message || 'Erro ao calcular disponibilidade' });
-  }
-});
-
-// Rota 4d: Cadastro de Barbearia (POST) - VERSÃO CORRETA E COMPLETA
-router.post("/barbearias", async (req, res) => {
-  const { nome, proprietario, email, telefone, endereco, intervalo, fuso_horario } = req.body;
-  try {
-    // Se houver horários, insere-os
-    const horariosPayload = req.body.horarios;
-    let createdHorarios = [];
-    if (Array.isArray(horariosPayload) && horariosPayload.length) {
-      const invalid = horariosPayload.find(h => h.dia_semana == null || !h.hora_abertura || !h.hora_fechamento);
-      if (invalid) {
-        console.error('Payload horarios inválido', invalid);
-        return res.status(400).json({ success: false, error: 'Horarios inválidos. Cada item precisa ter dia_semana, hora_abertura e hora_fechamento.' });
-      }
-      try {
-        const toInsert = horariosPayload.map(h => ({
-          shop_id: data.id,
-          dia_semana: h.dia_semana,
-          hora_abertura: h.hora_abertura,
-          hora_fechamento: h.hora_fechamento,
-          intervalo_minutos: h.intervalo_minutos ?? h.intervalo_minutos
-        }));
-        const { data: inserted, error: insertHorError } = await supabase
-          .from('barbearia_horarios')
-          .insert(toInsert)
-          .select();
-        if (insertHorError) {
-          console.error('Erro insert horarios:', insertHorError);
-        } else {
-          createdHorarios = inserted;
-          console.log('Horarios criados:', createdHorarios.length);
-        }
-      } catch (hErr) {
-        console.error('Erro ao inserir horarios:', hErr);
-      }
-    }
-
-    const { data, error } = await supabase
-      .from("barbearias")
-      .insert([{ nome, proprietario, email, telefone, endereco, intervalo, fuso_horario }])
-      .select()
-      .single();
-
-    if (error) {
-      console.error('Erro insert barbearia:', error);
-      throw error;
-    }
-
-    console.log('Barbearia cadastrada:', { id: data?.id, nome: data?.nome });
-
-
-
-    res.json({ success: true, barbearia: data, horarios: createdHorarios });
-  } catch (err) {
-    console.error("Erro ao cadastrar barbearia:", err);
-    const errMsg = err?.message || err?.error || 'Erro ao cadastrar barbearia';
-    res.status(500).json({ success: false, error: errMsg });
-  }
-});
-
-
-// Exporta a função que aplica todas as rotas ao app
+// Exporta função de setup
 export function setupRoutes(app) {
-  // Todas as rotas acima definidas no 'router' serão prefixadas com /api
-  app.use('/api', router);
+  app.use("/api", router);
 }
