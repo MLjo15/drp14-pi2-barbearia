@@ -277,64 +277,49 @@ export function setupRoutes(app) {
     }
   });
 
-    // 🔹 4) Cadastro de Barbearia
+  // 🔹 4) Cadastro de Barbearia
   app.post("/api/barbearias", async (req, res) => {
-    const { nome, proprietario, email, telefone, endereco, intervalo, fuso_horario } = req.body;
+    const { nome, proprietario, email, telefone, endereco, intervalo, fuso_horario, horarios } = req.body;
+
+    console.log('[API] POST /api/barbearias - Recebido:', { nome, email });
 
     try {
-      const { data, error } = await supabase
+      // 1. Insere a barbearia
+      console.log('[API] Tentando inserir barbearia no Supabase...');
+      const { data: barbeariaData, error: barbeariaError } = await supabase
         .from("barbearias")
         .insert([{ nome, proprietario, email, telefone, endereco, intervalo, fuso_horario }])
         .select()
         .single();
 
-      if (error) {
-        console.error('Erro insert barbearia:', error);
-        throw error;
+      if (barbeariaError) {
+        console.error('[API] Erro ao inserir barbearia no Supabase:', barbeariaError);
+        // Trata erro de email duplicado
+        if (barbeariaError.code === '23505') {
+          return res.status(409).json({ success: false, error: 'Este email já está em uso.' });
+        }
+        throw barbeariaError;
       }
 
-      console.log('Barbearia cadastrada:', { id: data?.id, nome: data?.nome });
+      console.log('[API] Barbearia cadastrada com sucesso:', { id: barbeariaData?.id, nome: barbeariaData?.nome });
 
-      // if horarios provided, insert them linked to the created barbearia
-      const horariosPayload = req.body.horarios;
-      let createdHorarios = [];
-      if (Array.isArray(horariosPayload) && horariosPayload.length) {
-        // validate each horario
-        const invalid = horariosPayload.find(h => h.dia_semana == null || !h.hora_abertura || !h.hora_fechamento);
-        if (invalid) {
-          console.error('Payload horarios inválido', invalid);
-          return res.status(400).json({ success: false, error: 'Horarios inválidos. Cada item precisa ter dia_semana, hora_abertura e hora_fechamento.' });
-        }
-        try {
-          const toInsert = horariosPayload.map(h => ({
-            shop_id: data.id,
-            dia_semana: h.dia_semana,
-            hora_abertura: h.hora_abertura,
-            hora_fechamento: h.hora_fechamento,
-            intervalo_minutos: h.intervalo_minutos ?? h.intervalo_minutos
-          }));
-          const { data: inserted, error: insertHorError } = await supabase
-            .from('barbearia_horarios')
-            .insert(toInsert)
-            .select();
-          if (insertHorError) {
-            console.error('Erro insert horarios:', insertHorError);
-          } else {
-            createdHorarios = inserted;
-            console.log('Horarios criados:', createdHorarios.length);
-          }
-        } catch (hErr) {
-          console.error('Erro ao inserir horarios:', hErr);
+      // 2. Insere os horários de funcionamento, se existirem
+      if (Array.isArray(horarios) && horarios.length > 0) {
+        console.log('[API] Tentando inserir horários...');
+        const horariosParaInserir = horarios.map(h => ({
+          shop_id: barbeariaData.id,
+          ...h
+        }));
+        const { error: horariosError } = await supabase.from('barbearia_horarios').insert(horariosParaInserir);
+        if (horariosError) {
+          console.error('[API] Erro ao inserir horários, mas a barbearia foi criada:', horariosError);
         }
       }
 
-      res.json({ success: true, barbearia: data, horarios: createdHorarios });
+      res.status(201).json({ success: true, barbearia: barbeariaData });
     } catch (err) {
-      console.error("Erro ao cadastrar barbearia:", err);
-      // If the error came from Supabase, try to return its message
-      const errMsg = err?.message || err?.error || 'Erro ao cadastrar barbearia';
-      res.status(500).json({ success: false, error: errMsg });
+      console.error("[API] Erro GERAL ao cadastrar barbearia:", err);
+      res.status(500).json({ success: false, error: err.message || 'Erro ao cadastrar barbearia' });
     }
   });
-
 }
