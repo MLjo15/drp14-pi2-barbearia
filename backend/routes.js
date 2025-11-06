@@ -64,10 +64,15 @@ export function setupRoutes(app) {
 
       if (error) throw error;
 
-      res.send("✅ Conta Google conectada com sucesso!");
+      // Redireciona para o frontend com status de sucesso
+      const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+      res.redirect(`${frontendUrl}?google_auth_status=success`);
+
     } catch (err) {
       console.error("Erro no callback Google:", err);
-      res.status(500).send("Erro ao conectar conta Google.");
+      // Redireciona para o frontend com status de erro
+      const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+      res.redirect(`${frontendUrl}?google_auth_status=error`);
     }
   });
 

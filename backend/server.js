@@ -6,10 +6,9 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { setupRoutes } from "./routes.js";
 
-// Configura o dotenv para encontrar o arquivo .env na pasta raiz do projeto,
-// não importa de onde o script seja executado.
+// Carrega as variáveis de ambiente do arquivo .env na pasta atual (backend)
 const __filename = fileURLToPath(import.meta.url);
-dotenv.config({ path: path.resolve(path.dirname(__filename), '..', '.env') });
+dotenv.config();
 
 console.log('Backend: SUPABASE_URL carregado?', !!process.env.SUPABASE_URL);
 console.log('Backend: SUPABASE_SERVICE_ROLE_KEY carregado?', !!process.env.SUPABASE_SERVICE_ROLE_KEY);

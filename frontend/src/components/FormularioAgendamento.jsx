@@ -4,6 +4,8 @@ import { TextInput, Button, Select, Loader, Notification, Popover } from '@manti
 import { DatePicker } from '@mantine/dates';
 import dayjs from 'dayjs';
 import 'dayjs/locale/pt-br';
+import { notifications } from '@mantine/notifications';
+import { IconCheck, IconX } from '@tabler/icons-react';
 
 // Componente do formulário de agendamento
 export default function FormularioAgendamento({ isOpen, onClose }) {
@@ -129,6 +131,37 @@ export default function FormularioAgendamento({ isOpen, onClose }) {
       }
     })();
   }, []);
+
+  // Efeito para verificar o status da autenticação do Google na URL.
+  // Este hook será executado uma vez quando o componente for montado.
+  useEffect(() => {
+    // Usa a API nativa do navegador para ler os parâmetros da URL.
+    const params = new URLSearchParams(window.location.search);
+    const googleAuthStatus = params.get('google_auth_status');
+
+    if (googleAuthStatus) {
+      if (googleAuthStatus === 'success') {
+        notifications.show({
+          title: 'Sucesso!',
+          message: 'Sua agenda do Google Calendar foi vinculada com sucesso.',
+          color: 'teal',
+          icon: <IconCheck size={18} />,
+          autoClose: 6000,
+        });
+      } else { // 'error' ou qualquer outro valor
+        notifications.show({
+          title: 'Falha na Vinculação',
+          message: 'Não foi possível vincular sua agenda do Google Calendar. Tente novamente.',
+          color: 'red',
+          icon: <IconX size={18} />,
+          autoClose: 8000,
+        });
+      }
+
+      // Limpa a URL para que a notificação não apareça novamente ao recarregar a página.
+      window.history.replaceState(null, '', window.location.pathname);
+    }
+  }, []); // O array vazio [] garante que este efeito rode apenas uma vez.
 
   // Memoiza a formatação dos dados das barbearias para o componente Select.
   const barbeariasData = useMemo(() => barbearias.map(b => ({ value: b.id, label: b.nome })), [barbearias]);
