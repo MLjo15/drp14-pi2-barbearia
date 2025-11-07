@@ -1,4 +1,12 @@
-import React, { useState } from 'react';
+/**
+ * @file src/App.jsx
+ * @description Componente principal da aplicação React.
+ * Gerencia a estrutura geral da página, a navegação, a exibição de seções
+ * e o controle dos modais de agendamento e cadastro.
+ */
+
+import React, { useState, useRef } from 'react';
+// Importações de componentes
 import Header from './components/Header.jsx';
 import Section from './components/Section.jsx';
 import Footer from './components/Footer.jsx';
@@ -8,9 +16,8 @@ import { Button, Image } from '@mantine/core';
 import '@mantine/carousel/styles.css';
 import { Carousel } from '@mantine/carousel';
 import Autoplay from 'embla-carousel-autoplay';
-import { useRef } from 'react';
 
-// Imagens
+// Importações de imagens para as seções e galeria
 import sobreImage from './assets/02.jpg';
 import servicosImage from './assets/03.png';
 import contatoImage from './assets/01.jpg';
@@ -22,19 +29,40 @@ import galeria08 from './assets/08.png';
 import galeria09 from './assets/09.png';
 import galeria10 from './assets/10.png';
 
+/**
+ * Componente funcional App.
+ * Este é o componente raiz da aplicação, responsável por renderizar o layout principal,
+ * incluindo o cabeçalho, as seções de conteúdo, o rodapé e os modais.
+ *
+ * @returns {JSX.Element} O elemento JSX que representa a aplicação completa.
+ */
 function App() {
-  // Estado para controlar se algum modal está aberto.
+  // ----------------------------------------------------------------
+  // ESTADOS (STATES)
+  // Gerencia a visibilidade dos modais e qual conteúdo deve ser exibido.
+  // ----------------------------------------------------------------
+
+  /** @type {[boolean, function]} Estado para controlar se o modal está aberto ou fechado. */
   const [isModalOpen, setIsModalOpen] = useState(false);
-  // Estado para determinar qual modal ('agendamento' or 'cadastro') deve ser renderizado.
+  /** @type {[string|null, function]} Estado para determinar qual formulário deve ser exibido no modal ('agendamento' ou 'cadastro'). */
   const [modalContent, setModalContent] = useState(null);
 
-  // Função para abrir um modal específico.
+  // ----------------------------------------------------------------
+  // FUNÇÕES AUXILIARES E MANIPULADORES (HANDLERS)
+  // ----------------------------------------------------------------
+
+  /**
+   * Abre o modal e define qual conteúdo (formulário) deve ser exibido.
+   * @param {'agendamento' | 'cadastro'} content - O tipo de formulário a ser exibido no modal.
+   */
   const openModal = (content) => {
     setModalContent(content);
     setIsModalOpen(true);
   };
 
-  // Função para fechar o modal atualmente aberto.
+  /**
+   * Fecha o modal e reseta o conteúdo exibido.
+   */
   const closeModal = () => {
     setIsModalOpen(false);
     setModalContent(null);
@@ -52,16 +80,20 @@ function App() {
     galeria10,
   ];
 
-  // Mapeia as imagens para os slides do carrossel.
+  /**
+   * Mapeia as URLs das imagens da galeria para componentes `Carousel.Slide` do Mantine.
+   * Cada slide exibe uma imagem da galeria.
+   * @type {JSX.Element[]}
+   */
   const slides = galleryImages.map((url) => (
     <Carousel.Slide key={url}>
       <Image src={url} alt="Foto da galeria da barbearia" className="gallery-carousel-image" />
     </Carousel.Slide>
-  )); // Corrigido: Fechado com '));' em vez de '};'
+  ));
 
   return (
     <>
-      {/* O Header contém os botões que chamam `openModal` para abrir os formulários. */}
+      {/* Componente Header: Contém a navegação e botões para abrir os modais. */}
       <Header onAgendamentoClick={() => openModal('agendamento')} onCadastroClick={() => openModal('cadastro')} />
       <main>
         <Section
@@ -71,6 +103,7 @@ function App() {
           imageSrc={sobreImage}
         />
 
+        {/* Seção de Agendamentos: Inclui um botão que abre o modal de agendamento. */}
         <Section
           id="servicos"
           title="Agendamentos"
@@ -89,6 +122,7 @@ function App() {
           </Button>
         </Section>
 
+        {/* Seção de Galeria: Exibe um carrossel de imagens. */}
         <Section
           id="galeria"
           title="Galeria"
@@ -112,6 +146,7 @@ function App() {
           }
         />
 
+        {/* Seção de Cadastro: Inclui um botão que abre o modal de cadastro de barbearia. */}
         <Section
           id="contato"
           title="Cadastre sua Barbearia"
@@ -132,7 +167,7 @@ function App() {
 
       <Footer />
 
-      {/* Renderização condicional dos modais com base no estado `modalContent`. */}
+      {/* Renderização condicional dos modais: Apenas um modal é renderizado por vez, baseado em `modalContent`. */}
       {modalContent === 'agendamento' && (
         <FormularioAgendamento isOpen={isModalOpen} onClose={closeModal} />
       )}

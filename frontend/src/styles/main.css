@@ -1,6 +1,13 @@
-/* --- CSS Reset para garantir consistência entre navegadores --- */
+/**
+ * @file src/styles/main.css
+ * @description Folha de estilos principal da aplicação.
+ * Contém o reset de CSS, variáveis de tema, estilos globais e overrides
+ * para componentes de bibliotecas externas como o Mantine.
+ */
+
 @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&display=swap');
 
+/* --- CSS Reset --- */
 *, *::before, *::after {
   box-sizing: border-box;
 }
@@ -31,8 +38,7 @@ img {
 }
 
 /* ------------------------------------------------------------------------------------------------------- */
-/* --- Variáveis de Estilo (Paleta de Cores e Fontes) --- */
-/* Comentário: Definições centrais de cores, fontes e outras propriedades para manter a consistência visual do site. */
+/* --- Variáveis de Tema (Cores, Fontes, etc.) --- */
 :root {
   --primary-bg-color: #1a1a1a;
   --secondary-bg-color: #1a1a1a;
@@ -45,7 +51,7 @@ img {
   --border-radius: 8px; 
 }
 
-/* --- Estilos Globais do corpo da página --- */
+/* --- Estilos Globais --- */
 body {
   font-family: var(--font-family-base);
   font-size: var(--font-size-base);
@@ -62,8 +68,7 @@ body {
 }
 
 /* ------------------------------------------------------------------------------------------------------- */
-/* --- Estilos do Cabeçalho e Navegação --- */
-/* Comentário: Estilos para o cabeçalho fixo, título do site e links de navegação. */
+/* --- Cabeçalho e Navegação --- */
 .site-header {
   background-color: var(--secondary-bg-color);
   padding: 20px 0;
@@ -103,8 +108,7 @@ body {
 }
 
 /* ------------------------------------------------------------------------------------------------------- */
-/* Estilos das Seções de Conteúdo */
-/* Comentário: Regras gerais para as seções principais da página (blocos com imagem e texto). */
+/* --- Seções de Conteúdo --- */
 .section {
   padding: 10px 0;
   padding: 35px 0; /* Aumentado para dar mais respiro entre as seções */
@@ -179,8 +183,7 @@ body {
 }
 
 /* ------------------------------------------------------------------------------------------------------- */
-/* --- Estilos da Galeria --- */
-/* Comentário: Grade responsiva para a galeria de imagens. */
+/* --- Galeria --- */
 .gallery-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
@@ -211,7 +214,7 @@ body {
   padding-bottom: 0;
 }
 
-/* --- Estilos do Carrossel da Galeria --- */
+/* --- Carrossel da Galeria --- */
 .gallery-carousel {
   /* O carrossel agora está em seu próprio container, então ajustamos a margem */
   width: 100%;
@@ -232,8 +235,7 @@ body {
 }
 
 /* ------------------------------------------------------------------------------------------------------- */
-/* --- Estilos do Rodapé --- */
-/* Comentário: Estilos para o rodapé, incluindo seções de informação e links sociais. */
+/* --- Rodapé --- */
 .site-footer {
   background-color: var(--secondary-bg-color);
   color: var(--secondary-text-color);
@@ -284,8 +286,7 @@ body {
 }
 
 /* ------------------------------------------------------------------------------------------------------- */
-/* --- Estilos do Modal --- */
-/* Comentário: Estilos para o componente Modal, incluindo overlay, conteúdo e animações. */
+/* --- Componente Modal --- */
 .modal-overlay {
   position: fixed; 
   top: 0;
@@ -315,11 +316,9 @@ body {
 }
 
 /* ------------------------------------------------------------------------------------------------------- */
-/* --- Correções e Overrides para Componentes Mantine --- */
+/* --- Overrides para Componentes Mantine --- */
 
-/* --- Z-INDEX CRÍTICO PARA PORTAIS (Mantine) --- */
-/* Comentário: Força um z-index alto para dropdowns e popovers
-  gerados dentro do modal para que não fiquem atrás do overlay. */
+/* Z-INDEX CRÍTICO: Garante que popovers e dropdowns do Mantine apareçam sobre o overlay do modal. */
 .mantine-Select-dropdown,
 .mantine-Popover-dropdown,
 .mantine-Menu-dropdown {
@@ -327,7 +326,7 @@ body {
 }
 
 /* --- Estilos do Botão de Fechar do Modal --- */
-.modal-close-btn { /* Classe customizada aplicada ao botão de fechar */
+.modal-close-btn {
   position: absolute;
   top: 15px;
   right: 15px;
@@ -339,7 +338,7 @@ body {
   line-height: 1;
 }
 
-/* --- Estilos Gerais para Formulários Dentro do Modal --- */
+/* --- Formulários Dentro do Modal --- */
 .form-container {
   color: var(--primary-text-color);
 }
@@ -362,7 +361,7 @@ body {
   gap: 15px;
 }
 
-/* --- Estilos para Inputs HTML Nativos (não-Mantine) Dentro do Modal --- */
+/* Estilos para Inputs HTML Nativos (não-Mantine) */
 .modal-content label {
   color: var(--primary-text-color) !important; 
   font-weight: 600 !important;
@@ -381,7 +380,7 @@ body {
   color: #999999 !important;
 }
 
-/* --- Estilos para Componentes Mantine (Inputs, Select, etc.) Dentro do Modal --- */
+/* Estilos para Componentes Mantine (Inputs, Select, etc.) */
 .modal-content .mantine-TextInput-input,
 .modal-content .mantine-Textarea-textarea,
 .modal-content .mantine-Select-input,
@@ -398,12 +397,12 @@ body {
   color: #999999 !important;
 }
 
-/* --- Estilos para Botões Mantine Dentro do Modal --- */
+/* Estilos para Botões Mantine */
 .modal-content .mantine-Button-root {
   margin-top: 10px;
 }
 
-/* --- Ajustes de Compactação para Formulários (Tamanhos de Fonte e Padding Menores) --- */
+/* Ajustes de Compactação para Formulários (Tamanhos de Fonte e Padding Menores) */
 .modal-content .form-container {
   gap: 10px;
 }
@@ -429,7 +428,7 @@ body {
   font-size: 0.9rem !important;
 }
 
-/* --- Correção para Controles do NumberInput (Stepper) do Mantine Dentro do Modal --- */
+/* Correção para Controles do NumberInput (Stepper) do Mantine */
 .modal-content .form-container .mantine-NumberInput-root {
   width: 120px !important;
   box-sizing: border-box;
@@ -464,7 +463,7 @@ body {
 }
 
 /* ------------------------------------------------------------------------------------------------------- */
-/* --- Correções de Estilo para Dropdowns (Select, Popover, DatePicker) --- */
+/* --- Overrides para Dropdowns (Select, Popover, DatePicker) --- */
 
 /* Força o fundo do dropdown do Select a ser branco para melhor legibilidade das opções. */
 .mantine-Select-dropdown { /* Aplica-se apenas ao dropdown do Select */
@@ -473,6 +472,7 @@ body {
   border-radius: var(--border-radius) !important;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
 }
+
 /* Popovers e dropdowns padrão (incluindo DatePicker) devem seguir o tema escuro do modal. */
 .mantine-Popover-dropdown,
 .mantine-Popper-box,
@@ -489,7 +489,7 @@ body {
   width: auto !important;
 }
 
-/* Força o painel interno do DatePicker a ter fundo transparente para se integrar ao tema escuro do popover. */
+/* Painel interno do DatePicker com fundo transparente para se integrar ao tema escuro do popover. */
 .mantine-DayPicker,
 .mantine-DayPicker-content,
 .mantine-DayPicker-wrapper,
@@ -497,7 +497,8 @@ body {
   background-color: transparent !important;
   color: var(--primary-text-color) !important;
 }
-/* O campo de input do DatePicker (a caixa visível) deve seguir o tema escuro do modal. */
+
+/* Campo de input do DatePicker (caixa visível) segue o tema escuro do modal. */
 .modal-content .mantine-DatePicker-input {
   background-color: #2b2b2b !important;
   color: var(--primary-text-color) !important;
@@ -509,15 +510,16 @@ body {
   background: transparent !important;
   border: none !important;
 }
-/* Garante que os dias da semana sejam abreviações em português (SEG, TER, etc.). */
+
+/* Dias da semana (labels) no calendário. */
 .mantine-DayPicker-weekday {
   font-size: 0.78rem !important;
   color: var(--secondary-text-color) !important;
 }
 
-/* Força abreviações em português para os dias da semana no DatePicker do Mantine. */
-/* A biblioteca renderiza os dias por extenso, então usamos um truque com pseudo-elementos
-   para substituir o texto original (escondido com `color: transparent`). */
+/* TRUQUE: Força abreviações em português para os dias da semana no DatePicker.
+   A biblioteca renderiza os dias por extenso, então o texto original é escondido (`color: transparent`)
+   e substituído por um pseudo-elemento `::after`. */
 .mantine-DayPicker-weekday {
   color: transparent !important; /* hide original text */
   position: relative !important;
@@ -538,7 +540,7 @@ body {
 .mantine-DayPicker-weekday:nth-child(6)::after { content: 'SAB'; }
 .mantine-DayPicker-weekday:nth-child(7)::after { content: 'DOM'; }
 
-/* --- Estilos para um Popover de DatePicker Espaçoso (Classe Customizada: .fc-datepicker-popup--spacious) --- */
+/* --- Popover de DatePicker Espaçoso (Classe Customizada: .fc-datepicker-popup--spacious) --- */
 .fc-datepicker-popup--spacious,
 .modal-content .mantine-DatePicker-dropdown.fc-datepicker-popup--spacious,
 .mantine-DatePicker-dropdown.fc-datepicker-popup--spacious {
@@ -681,7 +683,7 @@ body {
   }
 }
 
-/* --- Correções de Estilo para o Componente Select --- */
+/* --- Overrides para o Componente Select --- */
 /* Força o texto de TODAS as opções do Select a ser preto para garantir a legibilidade no fundo branco. */
 .modal-content .mantine-Select-dropdown * {
     color: #000000 !important; 
@@ -703,7 +705,8 @@ body {
   background-color: #222 !important; /* Fundo um pouco mais escuro para o item selecionado */
   color: var(--accent-color) !important; /* Cor de destaque para o texto do item selecionado */
 }
-/* --- Correções Específicas para o DatePicker (Calendário Interno) --- */
+
+/* --- Overrides Específicos para o DatePicker (Calendário Interno) --- */
 
 /* Mantém o calendário no tema escuro, se essa for a intenção (sobrescreve estilos gerais). */
 .modal-content .mantine-DatePicker-month,
@@ -912,7 +915,7 @@ body {
     border-radius: 50% !important;
 }
 
-/* Dias desabilitados (ex: fora dos `workingDays`) devem parecer inativos e não interativos. */
+/* Dias desabilitados (ex: fora dos `workingDays`) devem parecer inativos. */
 /* Também se aplica a dias passados, graças à propriedade `minDate`. */
 .mantine-DatePicker-day[data-disabled],
 .mantine-DatePicker-day[aria-disabled="true"] {
@@ -923,7 +926,7 @@ body {
   pointer-events: none; /* Garante que não haja interação. */
 }
 
-/* Destaque para dias disponíveis ao passar o mouse (hover). */
+/* Destaque para dias disponíveis no hover. */
 .mantine-DatePicker-day:not([data-disabled]):hover {
   background-color: rgba(128,163,21,0.18) !important; /* subtle green */
   color: var(--primary-text-color) !important;
@@ -1085,7 +1088,7 @@ body {
   height: 10px !important;
 }
 
-/* Substitui os rótulos dos dias da semana por abreviações em português usando pseudo-elementos. */
+/* TRUQUE: Substitui os rótulos dos dias da semana por abreviações em português. */
 .fc-datepicker-weekdaysRow > * {
   color: transparent !important; /* Esconde o texto original */
   position: relative !important;
@@ -1150,7 +1153,7 @@ body {
 }
 
 /* ------------------------------------------------------------------------------------------------------- */
-/* Animações */
+/* --- Animações --- */
 @keyframes fadeIn {
   from { opacity: 0; }
   to { opacity: 1; }
@@ -1162,7 +1165,7 @@ body {
 }
 
 /* ------------------------------------------------------------------------------------------------------- */
-/* --- Estilos Genéricos de Modal (Exemplo/Fallback, caso o principal falhe) --- */
+/* --- Estilos de Fallback para Modal (Exemplo) --- */
 .modal-overlay {
   position: fixed;
   top: 0; left: 0; right: 0; bottom: 0;
@@ -1214,7 +1217,7 @@ body {
   margin-top: 0.5rem;
 }
 
-/* --- Overrides Finais para Garantir a Aplicação dos Estilos do DatePicker --- */
+/* --- Overrides Finais para DatePicker (Garantia de Precedência) --- */
 /* Garante que a classe 'spacious' prevaleça e remova larguras máximas restritivas aplicadas anteriormente. */
 .modal-content .mantine-DatePicker-dropdown.fc-datepicker-popup--spacious,
 .mantine-DatePicker-dropdown.fc-datepicker-popup--spacious,
@@ -1266,11 +1269,7 @@ body {
   color: inherit !important;
 }
 
-/* --- Estilos para o Calendário Customizado (fc-day) --- */
-/* ================================================
-   ESTILOS PARA O CALENDÁRIO DE AGENDAMENTO
-   (usando a classe customizada .fc-day)
-================================================ */
+/* --- Estilos para o Calendário Customizado (renderDay com .fc-day) --- */
 
 /* Dias padrão */
 .fc-day {
