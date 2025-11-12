@@ -72,27 +72,85 @@ app.get("/api/health", (req, res) => res.json({ ok: true }));
 // Rotas "anti-sleep" para serviços de monitoramento como o UptimeRobot.
 // Mantém o serviço ativo em plataformas com planos gratuitos (ex: Render).
 app.get("/api/ping", (req, res) => {
-  console.log("[API] GET /api/ping - Serviço ativo.");
+  console.log("[API] GET /api/ping - Render Ativo.");
   return res.status(200).send("Serviço ativo.");
 });
 
 app.head("/api/ping", (req, res) => {
-  console.log("[API] HEAD /api/ping - Serviço ativo.");
+  console.log("[API] HEAD /api/ping - Render Ativo.");
   return res.status(200).end();
 });
 
-app.get("/api/maintenance", async (req, res) => {
-  // Esta rota também serve para manter o backend ativo, com o bônus
-  // de verificar a conexão com o banco de dados Supabase.
+// Função auxiliar para executar a rotina de manutenção do Supabase com lógica de intervalo.
+async function performSupabaseMaintenance() {
+  const MAINTENANCE_INTERVAL_DAYS = 6; // Executar a cada 6 dias
+  const TASK_NAME = "Rotina de Manutenção"; // Usar o nome da tarefa conforme o log de exemplo do usuário
+
   try {
-    // Executa uma consulta leve no Supabase para manter a conexão ativa.
-    await supabase.from("barbearias").select("id").limit(1);
-    console.log("[API] Rotina de manutenção (Supabase) executada com sucesso.");
-    res.status(200).send("Manutenção concluída com sucesso (Supabase).");
+    // 1. Verificar o último registro de manutenção bem-sucedida.
+    const { data: lastLog, error: logError } = await supabase
+      .from("manutencao_log")
+      .select("data_execucao")
+      .eq("tarefa", TASK_NAME)
+      .order("data_execucao", { ascending: false })
+      .limit(1)
+      .single();
+
+    if (logError && logError.code !== 'PGRST116') { // PGRST116 indica que nenhuma linha foi encontrada.
+      console.error("[API] Erro ao buscar log de manutenção:", logError.message);
+      // Em caso de falha ao buscar o log, assume-se que a manutenção deve ser executada para segurança.
+    }
+
+    let shouldPerformMaintenance = true;
+    if (lastLog) {
+      const lastExecutionDate = new Date(lastLog.data_execucao);
+      const sixDaysAgo = new Date();
+      sixDaysAgo.setDate(sixDaysAgo.getDate() - MAINTENANCE_INTERVAL_DAYS);
+
+      if (lastExecutionDate > sixDaysAgo) {
+        shouldPerformMaintenance = false;
+        console.log(`[API] ${TASK_NAME} não executada. Última execução em ${lastExecutionDate.toISOString()}. Próxima execução esperada após ${new Date(lastExecutionDate.getTime() + (MAINTENANCE_INTERVAL_DAYS * 24 * 60 * 60 * 1000)).toISOString()}`);
+      }
+    }
+
+    if (shouldPerformMaintenance) {
+      // 2. Executa uma consulta leve no Supabase para manter a conexão ativa.
+      await supabase.from("barbearias").select("id").limit(1);
+      console.log(`[API] ${TASK_NAME} executada com sucesso.`);
+
+      // 3. Registra a execução no log.
+      const { error: insertError } = await supabase
+        .from("manutencao_log")
+        .insert({
+          tarefa: TASK_NAME,
+          status: "concluida",
+          data_execucao: new Date().toISOString() // Armazena a hora UTC atual
+        });
+      if (insertError) {
+        console.error("[API] Erro ao registrar log de manutenção:", insertError.message);
+      }
+      return { status: 200, message: "Manutenção concluída com sucesso (Supabase)." };
+    } else {
+      return { status: 200, message: "Manutenção não necessária no momento (intervalo de 6 dias)." };
+    }
   } catch (e) {
-    console.error("[API] Erro na rotina de manutenção (Supabase):", e.message);
-    res.status(500).json({ error: "Erro na Manutenção: " + e.message });
+    console.error(`[API] Erro na ${TASK_NAME}:`, e.message);
+    // Registra a falha no log.
+    await supabase.from("manutencao_log").insert({ tarefa: TASK_NAME, status: "falha", data_execucao: new Date().toISOString() });
+    return { status: 500, message: "Erro na Manutenção: " + e.message };
   }
+}
+
+app.get("/api/maintenance", async (req, res) => {
+  const result = await performSupabaseMaintenance();
+  res.status(result.status).send(result.message);
+});
+
+// Adiciona o handler para requisições HEAD
+app.head("/api/maintenance", async (req, res) => {
+  const result = await performSupabaseMaintenance();
+  // Para requisições HEAD, apenas o status e os cabeçalhos são importantes, o corpo é ignorado.
+  res.status(result.status).end();
 });
 
 // --- TRATAMENTO DE ROTA NÃO ENCONTRADA (404) ---
