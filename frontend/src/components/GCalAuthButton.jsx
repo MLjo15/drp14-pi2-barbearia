@@ -29,7 +29,7 @@ const GCalAuthButton = ({ barbeariaId }) => {
     // Redireciona para a rota do backend que inicia o fluxo OAuth 2.0 com o Google.
     // O `shop_id` é passado como um parâmetro de query para que o backend saiba
     // a qual barbearia associar as credenciais do Google após a autenticação bem-sucedida.
-    window.location.href = `/api/auth/google?shop_id=${barbeariaId}`;
+    window.location.href = `${import.meta.env.VITE_API_BASE}/api/auth/google?shop_id=${barbeariaId}`;
   };
 
   return (
