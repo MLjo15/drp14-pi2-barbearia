@@ -91,8 +91,11 @@ const FormularioCadastro = ({ isOpen, onClose }) => {
         intervalo_minutos: formData.intervalo
       }));
 
+      // Constrói a URL completa da API usando a variável de ambiente.
+      const apiUrl = `${import.meta.env.VITE_API_BASE}/api/barbearias`;
+
       // Envia a requisição POST para a API para criar a nova barbearia.
-      const res = await fetch('/api/barbearias', {
+      const res = await fetch(apiUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -141,7 +144,7 @@ const FormularioCadastro = ({ isOpen, onClose }) => {
       alert("⚠️ Cadastre a barbearia primeiro!");
       return;
     }
-    window.location.href = `/api/auth/google?shop_id=${newBarbeariaId}`;
+    window.location.href = `${import.meta.env.VITE_API_BASE}/api/auth/google?shop_id=${newBarbeariaId}`;
   };
 
   if (!isOpen) return null;

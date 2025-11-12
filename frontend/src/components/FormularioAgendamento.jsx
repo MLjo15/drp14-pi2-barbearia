@@ -143,7 +143,7 @@ export default function FormularioAgendamento({ isOpen, onClose }) {
     setIsBarbeariasLoading(true);
     (async () => {
       try {
-        const res = await fetch('/api/barbearias');
+        const res = await fetch(`${import.meta.env.VITE_API_BASE}/api/barbearias`);
         const j = await res.json();
         if (j.success) setBarbearias(j.barbearias || []);
       } catch (e) {
@@ -206,7 +206,7 @@ export default function FormularioAgendamento({ isOpen, onClose }) {
     if (!id) return;
     (async () => {
       try {
-        const res = await fetch(`/api/barbearias/${id}`);
+        const res = await fetch(`${import.meta.env.VITE_API_BASE}/api/barbearias/${id}`);
         const j = await res.json();
         if (j.success) {
           const horarios = Array.isArray(j.horarios) ? j.horarios : [];
@@ -245,7 +245,7 @@ export default function FormularioAgendamento({ isOpen, onClose }) {
     setIsSlotsLoading(true);
     (async () => {
       try {
-        const res = await fetch(`/api/barbearias/${id}/availability?date=${dateStr}`);
+        const res = await fetch(`${import.meta.env.VITE_API_BASE}/api/barbearias/${id}/availability?date=${dateStr}`);
         const j = await res.json();
         if (j.success) {
           setSlots(
@@ -325,7 +325,7 @@ export default function FormularioAgendamento({ isOpen, onClose }) {
         dataHoraFim = new Date(start.getTime() + interval * 60000).toISOString();
       }
 
-      const res = await fetch('/api/agendamento', {
+      const res = await fetch(`${import.meta.env.VITE_API_BASE}/api/agendamento`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

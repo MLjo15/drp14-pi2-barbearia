@@ -1,4 +1,3 @@
-
 # 💈 DRP14-PI2-BARBEARIA
 
 > **Projeto Integrador II – UNIVESP**
@@ -105,15 +104,10 @@ npm v11.6.2
 
 ## 👨‍💻 **Equipe**
 
-| Nome                                             | RA       | Função                                       |
-| ------------------------------------------------ | -------- | ---------------------------------------------- |
-| **Ambrósio Helton Lucas de Barros**       | 23219858 | Levantamentos de dados de Campo                |
-| **Anderson Santos da Silva**               | 23201231 | Fullstack / Arquitetura da aplicação         |
-| **Gabriel Costa de Souza**                 | 23206378 | Testes integrados e documentação            |
-| **Magda Moschiel**                         | 23225760 | UI/UX e controle de qualidade                  |
-| **Marcilio Antonio Correia de Lima Filho** | 2215854  | Testes integrados e documentação            |
-| **Rodrigo Carvalho**                       | 23202360 | Integração com Google APIs e autenticação |
-| **Roger Aparecido**                        | 23226376 | Banco de dados / Supabase                      |
+| Nome                                             | RA                 | Função                                                         |
+| ------------------------------------------------ | ------------------ | ---------------------------------------------------------------- |
+| **Anderson Santos da Silva**               | **23201231** | **Desenvolvimento Fullstack / Arquitetura da aplicação** |
+| **Marcilio Antonio Correia de Lima Filho** | **2215854**  | **Testes integrados e documentação**                    |
 
 ## 📜 **Licença**
 
